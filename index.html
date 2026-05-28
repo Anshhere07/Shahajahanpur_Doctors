@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MagnumKare Specialist Referral System</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="Securely connect local clinics and medical stores with specialist doctors. Book instant referred appointments, review video testimonials, and track commissions.">
+  <meta name="keywords" content="MagnumKare, Patient Referral, Appointment Booking, Clinic Software, Medical SEO, Shahjahanpur Doctors, Healthcare Tech">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Background Decorative Glowing Blurs -->
+  <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; overflow: hidden; pointer-events: none; z-index: 1;">
+    <div style="position: absolute; top: -10%; left: 30%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(113, 194, 134, 0.08) 0%, transparent 70%); filter: blur(80px); border-radius: 50%;"></div>
+    <div style="position: absolute; bottom: -10%; right: 10%; width: 40vw; height: 40vw; background: radial-gradient(circle, rgba(4, 38, 24, 0.05) 0%, transparent 70%); filter: blur(90px); border-radius: 50%;"></div>
+  </div>
+
+  <!-- Frosted Glass Navbar -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <!-- Left side: Brand Logo -->
+      <a href="#" class="logo" id="nav-logo">
+        <span class="logo-glow"></span>
+        <span>Magnum<span class="text-gradient">Kare</span></span>
+      </a>
+
+      <!-- Center side: Nav Menu -->
+      <ul class="nav-menu">
+        <li>
+          <a href="#" class="nav-link active" id="nav-book-appointment">Book Appointment</a>
+        </li>
+      </ul>
+
+      <!-- Right side: Actions & Notifications -->
+      <div class="nav-actions">
+        <a href="tel:+918707665217" class="nav-support-pill" title="Call Helpdesk: 8707665217">
+          <i data-lucide="phone" style="width: 14px; height: 14px; color: var(--cyan);"></i>
+          <span>Support: 8707665217</span>
+        </a>
+        <button class="bell-btn" id="bell-btn" aria-label="View notifications">
+          <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+          <span class="bell-badge" id="bell-badge">0</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Centered Content Container within 60% Desktop Width -->
+  <main class="app-container">
+
+    <!-- SCREEN 1: DOCTORS DIRECTORY (HOME) -->
+    <section id="specialties-screen" class="screen active">
+      <div class="hero-header">
+        <span class="hero-tagline">Shahjahanpur Specialist Directory</span>
+        <h1 class="hero-title">Refer to Shahjahanpur Specialists</h1>
+        <p class="hero-desc">Connecting local clinics and pharmacies with leading regional specialist doctors from Satyanand, Jagmohan Lal, and Jain hospitals in Shahjahanpur city.</p>
+      </div>
+
+      <!-- Search Bar -->
+      <div class="search-wrapper">
+        <input type="search" id="search-input" class="search-input" placeholder="Search specialists by name, specialty, or hospital..." autocomplete="off" autocorrect="off" spellcheck="false">
+        <i data-lucide="search" class="search-icon"></i>
+      </div>
+
+      <!-- Doctors Directory List -->
+      <div class="doctors-container" id="doctors-directory">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- SCREEN 3: DOCTOR PROFILE VIEW -->
+    <section id="profile-screen" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" id="back-to-doctors" aria-label="Go back to doctors list">
+          <i data-lucide="chevron-left" style="width: 20px; height: 20px;"></i>
+        </button>
+        <h2 class="section-title" id="profile-doc-title">Doctor Profile</h2>
+      </div>
+
+      <!-- Doctor Profile Content Grid -->
+      <div class="glass-panel profile-grid" id="doctor-profile-grid">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+    <!-- SCREEN 4: APPOINTMENT BOOKING FORM -->
+    <section id="form-screen" class="screen">
+      <div class="screen-header">
+        <button class="back-btn" id="back-to-profile" aria-label="Go back to doctor profile">
+          <i data-lucide="chevron-left" style="width: 20px; height: 20px;"></i>
+        </button>
+        <h2 class="section-title" id="booking-form-title">Book Referred Appointment</h2>
+      </div>
+
+      <!-- Referral Submission Form -->
+      <div class="glass-panel" id="booking-form-wrapper">
+        <form class="booking-form" id="booking-form-el">
+          
+          <!-- Row 1: Patient details -->
+          <div class="form-group-row">
+            <div class="form-field">
+              <label class="form-label" for="patient-name">Patient Full Name</label>
+              <input type="text" id="patient-name" name="patient-name" class="form-input" placeholder="e.g. Ramesh Chandra" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label" for="patient-phone">Patient Contact Phone</label>
+              <input type="tel" id="patient-phone" name="patient-phone" class="form-input" placeholder="e.g. +91 98765 43210" pattern="^[0-9\s\+\-]{10,15}$" required>
+            </div>
+          </div>
+
+          <!-- Row 2: Age & Gender -->
+          <div class="form-group-row">
+            <div class="form-field">
+              <label class="form-label" for="patient-age">Patient Age (Years)</label>
+              <input type="number" id="patient-age" name="patient-age" class="form-input" placeholder="e.g. 45" min="1" max="120" required>
+            </div>
+            <div class="form-field">
+              <label class="form-label">Patient Gender</label>
+              <div class="gender-selector">
+                <label class="gender-option">
+                  <input type="radio" name="patient-gender" value="Male" checked required>
+                  <div class="gender-box">Male</div>
+                </label>
+                <label class="gender-option">
+                  <input type="radio" name="patient-gender" value="Female" required>
+                  <div class="gender-box">Female</div>
+                </label>
+                <label class="gender-option">
+                  <input type="radio" name="patient-gender" value="Other" required>
+                  <div class="gender-box">Other</div>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Symptoms / Issue -->
+          <div class="form-field">
+            <label class="form-label" for="patient-symptoms">Brief Symptoms & Clinical Diagnosis Summary</label>
+            <textarea id="patient-symptoms" name="patient-symptoms" class="form-input" placeholder="Summarize patient complaints, symptoms, or emergency logs here..." required></textarea>
+          </div>
+
+          <!-- Row 4: Date Slot Picker -->
+          <div class="form-field">
+            <label class="form-label">Select Consult Date Slot</label>
+            <div class="slot-grid" id="date-slot-container">
+              <!-- Dates generated by app.js -->
+            </div>
+          </div>
+
+          <!-- Row 5: Time Slot Picker -->
+          <div class="form-field">
+            <label class="form-label">Select Consult Time Slot</label>
+            <div class="slot-grid" id="time-slot-container">
+              <!-- Times generated by app.js -->
+            </div>
+          </div>
+
+          <!-- Row 6: Report Attachment dropzone -->
+          <div class="form-field">
+            <label class="form-label">Attach Lab/Radiology Reports (Optional)</label>
+            <div class="file-dropzone" id="file-dropzone">
+              <input type="file" id="report-file-input" style="display: none;" accept="image/*,.pdf,.doc,.docx">
+              <i data-lucide="upload-cloud" class="dropzone-icon"></i>
+              <div class="dropzone-text">Drag & drop lab files here, or <strong>browse files</strong></div>
+              <div class="selected-file-badge" id="selected-file-badge"></div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn-book-now" style="width: 100%; padding: 18px; font-size: 1.05rem; margin-top: 14px;">
+            <i data-lucide="check-circle-2"></i>
+            <span>Confirm and Dispatch Referral Booking</span>
+          </button>
+
+          <!-- Need Instant Support? -->
+          <div style="border-top: 1px dashed var(--border-glass); margin-top: 24px; padding-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <span class="form-label" style="font-size: 0.75rem; color: var(--text-muted); letter-spacing: 0.05em;">Need instant booking assistance?</span>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; width: 100%;">
+              <a href="https://wa.me/918707665217?text=Hello%20MagnumKare%20Helpdesk,%20I%20am%20a%20partner%20and%20need%20assistance%20confirming%20a%20referred%20patient%20appointment." target="_blank" class="btn-whatsapp" style="flex: 1; padding: 12px 16px; font-size: 0.85rem; border-radius: 12px; text-decoration: none; color: white;">
+                <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
+                <span>WhatsApp Helpdesk</span>
+              </a>
+              <a href="tel:+918707665217" class="btn-call" style="flex: 1; padding: 12px 16px; font-size: 0.85rem; border-radius: 12px; text-decoration: none;">
+                <i data-lucide="phone" style="width: 16px; height: 16px;"></i>
+                <span>Call Support (8707665217)</span>
+              </a>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </section>
+
+    <!-- SCREEN 6: APPOINTMENT CONFIRMATION -->
+    <section id="confirmation-screen" class="screen">
+      <div class="glass-panel conf-box" id="confirmation-card-container">
+        <!-- Rendered dynamically by app.js -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Slide-out Patient Testimonials Drawer -->
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="testimonial-drawer" id="testimonial-drawer">
+    <div class="drawer-header">
+      <h3 class="section-title" id="drawer-doctor-title" style="font-size: 1.4rem;">Patient Testimonials</h3>
+      <button class="close-drawer-btn" id="close-drawer-btn" aria-label="Close testimonials panel">
+        <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+      </button>
+    </div>
+    <div class="testimonials-scroll-box" id="testimonials-scroll-box">
+      <!-- Testimonials list generated by app.js -->
+    </div>
+  </aside>
+
+  <!-- Slide-out Live Notifications Drawer -->
+  <div class="notif-drawer-backdrop" id="notif-drawer-backdrop"></div>
+  <aside class="notif-drawer" id="notif-drawer">
+    <div class="notif-drawer-header">
+      <h3 class="notif-drawer-title">Notification Center</h3>
+      <button class="close-drawer-btn" id="close-notif-btn" aria-label="Close notification panel">
+        <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+      </button>
+    </div>
+    <div class="notif-scroll" id="notif-scroll">
+      <!-- Generated dynamically by app.js -->
+    </div>
+  </aside>
+
+  <!-- Floating Toast Banners Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Premium Footer -->
+  <footer class="app-footer">
+    <div class="footer-inner">
+      <p>© 2026 MagnumKare Digital Health Network. All rights reserved.</p>
+      <div style="display: flex; gap: 20px; align-items: center;">
+        <span style="color: var(--cyan); display: inline-flex; align-items: center; gap: 4px;">
+          <i data-lucide="shield" style="width: 12px; height: 12px;"></i>
+          <span>HIPAA Standard Cryptography</span>
+        </span>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Lucide Vector Icons Library CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Application Core Script -->
+  <script src="app.js"></script>
+
+</body>
+</html>
