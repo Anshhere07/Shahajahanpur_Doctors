@@ -29,15 +29,16 @@ const DOCTORS = [
     experience: "15+ Years",
     rating: "4.9",
     reviewsCount: 245,
-    hospital: "Jagmohan Lal Eye Hospital SPN",
+    hospital: "Jagmohan Lal Hospital",
     fees: "₹400",
     location: "Pahla Gol Chakkar, near Bareilly Mod, Avas Vikas, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=300&auto=format&fit=crop",
-    bio: "Dr. Manmohan Lal Gupta is the esteemed Founder and Director of Jagmohan Lal Eye Hospital in Shahjahanpur. Holding a prestigious Fellowship in Phaco from Shroff Eye Hospital Delhi and over 15 years of dedicated surgical practice, he is specialized in advanced micro-incision cataract surgery, customized LASIK laser vision correction, and clinical glaucoma treatments in Western UP.",
+    avatar: "https://jagmohanlalhospital.in/assets/images/leader.jpg",
+    bio: "Dr. Manmohan Lal Gupta is the esteemed Founder, Chairman, and Director of Jagmohan Lal Hospital in Shahjahanpur. After completing his MBBS and MS in Ophthalmology, he pursued a prestigious Fellowship in PHACO Surgery from Dr. Shroff's Charity Eye Hospital, New Delhi, and Sadguru Netra Chikitsalaya (SNC), Chitrakoot. He has over 15 years of dedicated ophthalmic practice and has successfully performed more than 16,000 surgeries, including advanced modular micro-incision cataract surgery, customized LASIK laser vision correction, and clinical glaucoma treatments.",
     socials: {
-      instagram: "https://www.instagram.com/magnumkare/",
-      facebook: "https://www.facebook.com/magnumkare/",
-      gmb: "https://www.google.com/search?q=Jagmohan+Lal+Eye+Hospital+Shahjahanpur"
+      instagram: "https://www.instagram.com/jagmohanlalhospital?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/profile.php?id=61581824104566",
+      gmb: "https://www.google.com/maps/search/Jagmohan+Lal+Eye+and+ENT+Hospital+Shahjahanpur",
+      website: "https://jagmohanlalhospital.in/"
     },
     testimonials: [
       { id: "jm1", patient: "Vijay Singh, Shahjahanpur", text: "Dr. Manmohan performed cataract surgery on my mother. Her vision is perfectly restored now! High-end hospital services.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" },
@@ -58,7 +59,7 @@ const DOCTORS = [
     avatar: "https://www.satyanandhospital.co.in/images/doctors/gaurav.webp",
     bio: "Dr. Gaurav Mishra is a highly respected Pediatric Consultant and Neonatologist in Shahjahanpur. Formerly an expert pediatric fellow at K.G.M.U. Lucknow, he has 15+ years of clinical experience. He specializes in pediatric intensive care support (PICU), critical newborn neonatology treatments, childhood respiratory disorders, and adolescent development plans.",
     socials: {
-      instagram: "https://www.instagram.com/satyanand_hospital/",
+      instagram: "https://www.instagram.com/satyanandhospitalpvt.ltd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
       facebook: "https://www.facebook.com/profile.php?id=100065378743239",
       gmb: "https://www.google.com/search?q=Satyanand+Hospital+Shahjahanpur"
     },
@@ -77,12 +78,13 @@ const DOCTORS = [
     hospital: "Jain Hospital Shahjahanpur",
     fees: "₹400",
     location: "Azizganj, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop",
+    avatar: "https://jainhospitalspn.in/assets/images/team/h1_1.png",
     bio: "Dr. S.K. Jain is the chief pediatric consultant and neonatologist at Jain Hospital with more than 25 years of rich experience in childcare. He is deeply trusted in Shahjahanpur for neonatology critical care support, complex pediatric infectious disease therapies, and pediatric emergency life support.",
     socials: {
-      instagram: "https://www.instagram.com/magnumkare/",
-      facebook: "https://www.facebook.com/magnumkare/",
-      gmb: "https://www.google.com/search?q=Jain+Hospital+Shahjahanpur"
+      instagram: "https://www.instagram.com/jain_hospital_shahjahanpur?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/profile.php?id=100077465092586",
+      gmb: "https://share.google/ZVVD9I7P5Rk6lOrJ2",
+      website: "https://jainhospitalspn.in/"
     },
     testimonials: [
       { id: "jn1", patient: "Pawan Pandit, Shahjahanpur", text: "My child had severe typhoid, but Dr. S.K. Jain started the correct treatment instantly. He is the most trusted child specialist in this city.", thumb: "https://images.unsplash.com/photo-1628157582853-a796fa650a6a?q=80&w=200&auto=format&fit=crop" }
@@ -99,12 +101,13 @@ const DOCTORS = [
     hospital: "Jain Hospital Shahjahanpur",
     fees: "₹400",
     location: "Azizganj, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop",
+    avatar: "https://jainhospitalspn.in/assets/images/team/h1_2.png",
     bio: "Dr. Amita Jain is the senior Director and Gynecology Consultant at Jain Hospital. With over 20 years of clinical excellence, she specializes in painless delivery procedures, high-risk pregnancy management, laparoscopy surgeries, and maternal health support systems.",
     socials: {
-      instagram: "https://www.instagram.com/magnumkare/",
-      facebook: "https://www.facebook.com/magnumkare/",
-      gmb: "https://www.google.com/search?q=Jain+Hospital+Shahjahanpur"
+      instagram: "https://www.instagram.com/jain_hospital_shahjahanpur?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/profile.php?id=100077465092586",
+      gmb: "https://share.google/ZVVD9I7P5Rk6lOrJ2",
+      website: "https://jainhospitalspn.in/"
     },
     testimonials: [
       { id: "jn2", patient: "Akansha Singh, Shahjahanpur", text: "I went there for my mother's treatment. Sabha, Sharda, and Faizan took amazing care of her. Very dedicated doctors and staff.", thumb: "https://images.unsplash.com/photo-1554151228-14d9def656e4?q=80&w=200&auto=format&fit=crop" }
@@ -121,12 +124,13 @@ const DOCTORS = [
     hospital: "Umeed IVF & Fertility Center SPN",
     fees: "₹400",
     location: "Jain Hospital Campus, Azizganj, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1594824813573-246434de83fb?q=80&w=300&auto=format&fit=crop",
+    avatar: "https://jainhospitalspn.in/assets/images/team/h1_3.png",
     bio: "Dr. Megha Gupta is a dedicated clinical infertility specialist and gynecological surgeon. At Umeed IVF Center, she offers advanced fertility therapies, intrauterine insemination (IUI), in-vitro fertilization (IVF), and laparoscopic gynecological surgeries with advanced precision protocols.",
     socials: {
-      instagram: "https://www.instagram.com/magnumkare/",
-      facebook: "https://www.facebook.com/magnumkare/",
-      gmb: "https://www.google.com/search?q=Umeed+IVF+Center+Shahjahanpur"
+      instagram: "https://www.instagram.com/jain_hospital_shahjahanpur?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/profile.php?id=100077465092586",
+      gmb: "https://share.google/ZVVD9I7P5Rk6lOrJ2",
+      website: "https://jainhospitalspn.in/"
     },
     testimonials: [
       { id: "jn3", patient: "Rekha Sharma, Shahjahanpur", text: "Dr. Megha Gupta's fertility treatment is highly advanced and scientific. The Umeed Center is a blessing for families in SPN.", thumb: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop" }
@@ -146,7 +150,7 @@ const DOCTORS = [
     avatar: "https://www.satyanandhospital.co.in/images/doctors/indu.webp",
     bio: "Dr. Indu Yadav is a highly respected gynaecologist at Satyanand Hospital. Specialized in painless delivery, high-risk pregnancy diagnostics, laparoscopy interventions, and maternal care, she focuses on comfortable and safe clinical treatments.",
     socials: {
-      instagram: "https://www.instagram.com/satyanand_hospital/",
+      instagram: "https://www.instagram.com/satyanandhospitalpvt.ltd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
       facebook: "https://www.facebook.com/profile.php?id=100065378743239",
       gmb: "https://www.google.com/search?q=Satyanand+Hospital+Shahjahanpur"
     },
@@ -168,7 +172,7 @@ const DOCTORS = [
     avatar: "https://www.satyanandhospital.co.in/images/doctors/saurabh.webp",
     bio: "Dr. Saurabh Mishra is the chief Anaesthesiology and Intensive Care Consultant at Satyanand Hospital. He manages advanced critical care ventilation, postoperative analgesia, emergency trauma support, and acute pain blocks under the MagnumKare network.",
     socials: {
-      instagram: "https://www.instagram.com/satyanand_hospital/",
+      instagram: "https://www.instagram.com/satyanandhospitalpvt.ltd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
       facebook: "https://www.facebook.com/profile.php?id=100065378743239",
       gmb: "https://www.google.com/search?q=Satyanand+Hospital+Shahjahanpur"
     },
@@ -187,12 +191,13 @@ const DOCTORS = [
     hospital: "Precision Smiles Dental Clinic SPN",
     fees: "₹300",
     location: "Jain Hospital Campus, Azizganj, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop",
+    avatar: "https://jainhospitalspn.in/assets/images/team/h1_4.png",
     bio: "Dr. Puneet Jain is the chief dental surgeon and orthodontist at Precision Smiles SPN. He has successfully designed over 800 dental alignment cases and is specialized in metal/ceramic braces, invisible aligners, dental implants, and pediatric smile treatments.",
     socials: {
-      instagram: "https://www.instagram.com/magnumkare/",
-      facebook: "https://www.facebook.com/magnumkare/",
-      gmb: "https://www.google.com/search?q=Precision+Smiles+Dental+Clinic+Shahjahanpur"
+      instagram: "https://www.instagram.com/jain_hospital_shahjahanpur?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/profile.php?id=100077465092586",
+      gmb: "https://share.google/ZVVD9I7P5Rk6lOrJ2",
+      website: "https://jainhospitalspn.in/"
     },
     testimonials: [
       { id: "jn4", patient: "Abhinav Gupta, Shahjahanpur", text: "Fantastic dental alignment. The invisible aligner therapy was painless and extremely successful.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
@@ -212,7 +217,7 @@ const DOCTORS = [
     avatar: "https://www.satyanandhospital.co.in/images/doctors/shweta.webp",
     bio: "Dr. Shweta Mishra directs the advanced diagnostic laboratory and biochemistry services at Satyanand Hospital. Formerly clinical biochemist at GMC Patiala, she specializes in endocrine profiling, tumor markers, and automated molecular pathology.",
     socials: {
-      instagram: "https://www.instagram.com/satyanand_hospital/",
+      instagram: "https://www.instagram.com/satyanandhospitalpvt.ltd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
       facebook: "https://www.facebook.com/profile.php?id=100065378743239",
       gmb: "https://www.google.com/search?q=Satyanand+Hospital+Shahjahanpur"
     },
@@ -257,7 +262,7 @@ const DOCTORS = [
     avatar: "https://www.satyanandhospital.co.in/images/doctors/pradeepyadav.webp",
     bio: "Dr. Pradeep Yadav is a distinguished Orthopaedic surgeon in Shahjahanpur, known for his expertise in knee & hip joint replacements, complex fracture management, arthroscopic ligament repairs, and advanced spine and arthritis treatments.",
     socials: {
-      instagram: "https://www.instagram.com/satyanand_hospital/",
+      instagram: "https://www.instagram.com/satyanandhospitalpvt.ltd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
       facebook: "https://www.facebook.com/profile.php?id=100065378743239",
       gmb: "https://www.google.com/search?q=Dr+Pradeep+Yadav+Ortho+Shahjahanpur",
       website: "https://www.drpradeepyadavortho.com/"
@@ -269,45 +274,46 @@ const DOCTORS = [
   {
     id: "doc-ushachandra",
     name: "Dr. Usha Chandra",
-    degrees: "MBBS, MD - Dermatology & Cosmetology (Skin Specialist)",
+    degrees: "MBBS, MD (Dermatology) - BHU (Board Certified)",
     specialty: "derma",
-    experience: "8+ Years",
+    experience: "15+ Years",
     rating: "4.9",
     reviewsCount: 142,
-    hospital: "Dr. Usha Chandra Skin Care Clinic SPN",
+    hospital: "Shree Balaji Skin Care Clinic",
     fees: "₹400",
-    location: "Town Hall Road, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?q=80&w=300&auto=format&fit=crop",
-    bio: "Dr. Usha Chandra is a prominent dermatologist and aesthetician in Shahjahanpur. With extensive training in laser procedures and cosmetic skincare, she is dedicated to providing high-quality solutions for clinical dermatological conditions, laser hair reduction, and anti-aging treatments.",
+    location: "108 Kacha Mod, Kuchha Kathara, Shahjahanpur",
+    avatar: "https://drushachandraderma.com/Assets/about-image-1.jpg",
+    bio: "Dr. Usha Chandra is a prominent board-certified dermatologist and aesthetic skin consultant in Shahjahanpur. Holding an MBBS and MD in Dermatology from the prestigious Banaras Hindu University (BHU), she previously served as an expert dermatologist at K.G.M.U. (Lucknow) and L.L.R.M. (Meerut). At Shree Balaji Skin Care Clinic, she provides advanced clinical care for acne, melasma, psoriasis, complex hair fall conditions (including GFC therapies), and premium anti-aging aesthetic procedures.",
     socials: {
-      instagram: "https://www.instagram.com/dr_usha_chandra_dermatologist/?hl=en",
-      facebook: "https://www.facebook.com/",
-      gmb: "https://www.google.com/search?q=Dr+Usha+Chandra+Dermatologist+Shahjahanpur"
+      instagram: "https://www.instagram.com/dr_usha_chandra_dermatologist?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/ushachandra24",
+      gmb: "https://share.google/dApdpS9RQ8OkcDSBr",
+      website: "https://drushachandraderma.com/"
     },
     testimonials: [
       { id: "uc1", patient: "Kiran Saxena, Shahjahanpur", text: "Amazing results for skin treatment and pigmentation. She listens very patiently and details the prescription.", thumb: "https://images.unsplash.com/photo-1554151228-14d9def656e4?q=80&w=200&auto=format&fit=crop" }
     ]
   },
   {
-    id: "doc-neeraj",
-    name: "Dr. Neeraj Kumar",
-    degrees: "MBBS, MD - Tuberculosis & Chest Diseases (Pulmonologist)",
+    id: "doc-shubhamjain",
+    name: "Dr. Shubham Jain",
+    degrees: "MBBS, MD - Respiratory Medicine (Chest Specialist)",
     specialty: "chest",
-    experience: "15+ Years",
-    rating: "4.8",
+    experience: "8+ Years",
+    rating: "4.9",
     reviewsCount: 215,
-    hospital: "Neeraj Chest Care Centre Shahjahanpur",
+    hospital: "Neeraj Chest Care Centre",
     fees: "₹400",
-    location: "Near Avas Vikas Colony, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?q=80&w=300&auto=format&fit=crop",
-    bio: "Dr. Neeraj Kumar is a highly sought-after pulmonologist and chest specialist in Shahjahanpur. As the Chief Director of Neeraj Chest Care Centre, he provides comprehensive diagnostic and therapeutic care for asthma, chronic obstructive pulmonary disease (COPD), respiratory allergy disorders, and critical chest infections.",
+    location: "Jail Road, Bijlipura, Shahjahanpur",
+    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=300&auto=format&fit=crop",
+    bio: "Dr. Shubham Jain is a highly qualified pulmonologist and chest specialist practicing in Shahjahanpur. Operating out of the Neeraj Chest Care Centre, he specializes in respiratory medicine, offering comprehensive diagnostic and therapeutic care for asthma, chronic obstructive pulmonary disease (COPD), tuberculosis (TB), chronic cough, pneumonia, and complex chest infections.",
     socials: {
-      instagram: "https://www.instagram.com/",
-      facebook: "https://www.facebook.com/",
-      gmb: "https://www.google.com/search?q=neeraj+chest+care+centre+shahjahanpur&oq=neeraj+ches&gs_lcrp=EgZjaHJvbWUqBwgCEAAYgAQyBggAEEUYOTIGCAEQIxgnMgcIAhAAGIAEMggIAxAAGBYYHjIICAQQABgWGB4yCggFEAAYChgWGB4yCAgGEAAYFhgeMgYIBxBFGD3SAQg0OTM5ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8#sv=CAwSqwMKBmxjbF9wdhJGCgNwdnESP0NnMHZaeTh4TVhrMGJEZzJaSEIzSWg0S0dHNWxaWEpoYWlCamFHVnpkQ0JqWVhKbElHTmxiblJ5WlJBQ0dBTRKEAgoDbHFpEvwBQ2lWdVpXVnlZV29nWTJobGMzUWdZMkZ5WlNCalpXNTBjbVVnYzJoaGFHcGhhR0Z1Y0hWeVNMdmxqS1NTdllDQUNGb3pFQUFRQVJBQ0VBTVlBUmdFSWlWdVpXVnlZV29nWTJobGMzUWdZMkZ5WlNCalpXNTBjbVVnYzJoaGFHcGhhR0Z1Y0hWeWtnRUdaRzlqZEc5eW1nRkVRMms1UkZGVmJGSlJWVTUyV2tWT2IyUkliR3BTYW14MlZESjRZVkpHWjNsWGF6VlVWMGRvU2xaRlVuTldiRTVYWWtST1YySlZOSGhaYTFaSFRXeGFkRmw0UVVMNkFRUUlBQkF2EhIKA3RicxILbHJmOiEzc0lBRT0SKgoBcRIlbmVlcmFqIGNoZXN0IGNhcmUgY2VudHJlIHNoYWhqYWhhbnB1choSbG9jYWwtcGxhY2Utdmlld2VyGAoguLWimQI"
+      instagram: "https://www.instagram.com/chestphysician.spn?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/dr.shubhamedo",
+      gmb: "https://www.google.com/search?q=neeraj+chest+care+centre+shahjahanpur&oq=neer&gs_lcrp=EgZjaHJvbWUqDggAEEUYJxg7GIAEGIoFMg4IABBFGCcYOxiABBiKBTIGCAEQRRg5MgYIAhAjGCcyDwgDEC4YQxixAxiABBiKBTIPCAQQABhDGLEDGIAEGIoFMgYIBRBFGDwyBggGEEUYPDIGCAcQRRg80gEIMTc3NWowajeoAgCwAgA&sourceid=chrome&ie=UTF-8#sv=CAwSqwMKBmxjbF9wdhJGCgNwdnESP0NnMHZaeTh4TVhrMGJEZzJaSEIzSWg0S0dHNWxaWEpoYWlCamFHVnpkQ0JqWVhKbElHTmxiblJ5WlJBQ0dBTRKEAgoDbHFpEvwBQ2lWdVpXVnlZV29nWTJobGMzUWdZMkZ5WlNCalpXNTBjbVVnYzJoaGFHcGhhR0Z1Y0hWeVNMdmxqS1NTdllDQUNGb3pFQUFRQVJBQ0VBTVlBUmdFSWlWdVpXVnlZV29nWTJobGMzUWdZMkZ5WlNCalpXNTBjbVVnYzJoaGFHcGhhR0Z1Y0hWeVtnRUdaRzlqZEc5eW1nRkVRMms1UkZGVmJGSlJWVTUyV2tWT2IyUkliR3BTYW14MlZESjRZVkpHWjNsWGF6VlVWMGRvU2xaRlVuTldiRTVYWWtST1YySlZOSGhaYTFaSFRXeGFkRmw0UVVMNkFRUUlBQkF2EhIKA3RicxILbHJmOiEzc0lBRT0SKgoBcRIlbmVlcmFqIGNoZXN0IGNhcmUgY2VudHJlIHNoYWhqYWhhbnB1choSbG9jYWwtcGxhY2Utdmlld2VyGAoguLWimQI"
     },
     testimonials: [
-      { id: "nr1", patient: "Aalok Pathak, Shahjahanpur", text: "Neeraj Chest Care Centre has the best treatment for lung diseases. Dr. Neeraj's diagnosis of my chronic asthma was highly accurate.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
+      { id: "nr1", patient: "Aalok Pathak, Shahjahanpur", text: "Neeraj Chest Care Centre has the best treatment for lung diseases. Dr. Shubham Jain's diagnosis of my chronic asthma was highly accurate.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
     ]
   },
   {
@@ -324,7 +330,7 @@ const DOCTORS = [
     avatar: "https://www.satyanandhospital.co.in/images/doctors/rishabh.webp",
     bio: "Dr. Rishabh Nayak is a highly qualified and dedicated Medicine Specialist at Satyanand Hospital, Shahjahanpur. With a strong educational background holding his M.B.B.S. from GMC Nagpur and his M.D. from RML Delhi, he brings 3+ years of clinical excellence in Internal Medicine. He specializes in the comprehensive medical management of chronic disorders, thyroid & hormone care, diabetes, pulmonology, gastroenterology, and adult comprehensive healthcare.",
     socials: {
-      instagram: "https://www.instagram.com/satyanand_hospital/",
+      instagram: "https://www.instagram.com/satyanandhospitalpvt.ltd?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
       facebook: "https://www.facebook.com/profile.php?id=100065378743239",
       gmb: "https://www.google.com/search?q=Satyanand+Hospital+Shahjahanpur",
       website: "https://www.satyanandhospital.co.in/doctors/medicine-dr-rishabhnayak.html"
