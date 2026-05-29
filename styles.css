@@ -1849,6 +1849,14 @@ textarea.form-input {
   font-size: 0.85rem;
 }
 
+.footer-links {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 @media (max-width: 1280px) {
   .footer-inner {
     max-width: 80%;
@@ -1998,8 +2006,32 @@ textarea.form-input {
 
 /* --- HIGH-END RESPONSIVENESS OVERRIDES --- */
 
-/* Tablet and Small Screens (below 900px) */
-@media (max-width: 900px) {
+/* Responsive Container and Navbar Width Optimizations (at 1280px screen) */
+@media (max-width: 1280px) {
+  .app-container {
+    max-width: 85%;
+  }
+  .navbar-inner {
+    max-width: 85%;
+  }
+  .footer-inner {
+    max-width: 85%;
+  }
+}
+
+/* Stacking for Profile Grid and Sidebar early (at 1024px screen for tablets) */
+@media (max-width: 1024px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .profile-sidebar {
+    align-items: center;
+    text-align: center;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 auto;
+  }
   .profile-header-info {
     text-align: center;
     display: flex;
@@ -2009,51 +2041,44 @@ textarea.form-input {
   .profile-hospital {
     justify-content: center;
   }
+  .profile-cta-group {
+    max-width: 520px;
+    width: 100%;
+    margin: 20px auto 0 auto;
+  }
+  .profile-cta-primary-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .profile-cta-contact-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
 }
 
-/* Mobile & Tablet Devices (below 768px) */
-@media (max-width: 768px) {
-  .navbar-inner {
-    max-width: 100%;
-    padding: 0 16px;
-  }
-  
-  /* Hide the single nav-menu on mobile to prevent overcrowding */
+/* Tablet Optimizations - Hide Menus, Wrap Footers & Stack Cards Comfortably (at 992px screen) */
+@media (max-width: 992px) {
   .nav-menu {
-    display: none !important;
+    display: none !important; /* Prevents center menu from crowding nav actions */
   }
-  
-  .logo {
-    font-size: 1.2rem;
+  .footer-inner {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
   }
-  
-  /* Hide text label on mobile, showing only phone icon for clean support action */
-  .nav-support-pill span {
-    display: none !important;
-  }
-  
-  .nav-support-pill {
-    padding: 10px;
-    border-radius: 12px;
-  }
-  
-  /* Doctor Cards responsive structural unification */
   .doctor-card {
     flex-direction: column !important;
     text-align: center !important;
-    padding: 24px 16px !important;
+    padding: 24px 20px !important;
     gap: 16px !important;
     align-items: center !important;
   }
-  
   .doctor-img-wrapper {
     margin: 0 auto !important;
   }
-  
   .doctor-info-primary {
     width: 100% !important;
   }
-  
   .doc-meta {
     display: flex !important;
     flex-direction: column !important;
@@ -2061,13 +2086,11 @@ textarea.form-input {
     gap: 10px !important;
     margin-bottom: 0 !important;
   }
-  
   .doc-meta-item {
     justify-content: center !important;
     text-align: center !important;
     width: 100% !important;
   }
-
   .doctor-card-actions {
     flex-direction: row !important;
     justify-content: space-between !important;
@@ -2078,34 +2101,41 @@ textarea.form-input {
     padding-top: 16px !important;
     gap: 12px !important;
   }
-  
   .doctor-card-actions .rating-badge {
     margin-top: 0 !important;
   }
-  
   .view-profile-btn {
     flex-grow: 1 !important;
     justify-content: center !important;
     padding: 12px 20px !important;
   }
-  
-  /* Profile layout column adjustments */
-  .profile-cta-primary-row {
-    flex-direction: column;
-    gap: 12px;
+}
+
+/* Mobile & Small Tablet Devices (below 768px) */
+@media (max-width: 768px) {
+  .navbar-inner {
+    max-width: 100%;
+    padding: 0 16px;
   }
-  
-  .profile-cta-contact-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
+  .logo {
+    font-size: 1.2rem;
   }
-  
-  /* Form stacking */
+  .nav-support-pill span {
+    display: none !important; /* Only show glowing phone icon on small viewports */
+  }
+  .nav-support-pill {
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    border-radius: 14px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
   .form-group-row {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  
   .slot-grid {
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 8px;
@@ -2118,6 +2148,10 @@ textarea.form-input {
     padding: 20px 16px !important;
     border-radius: 16px !important;
   }
+  .footer-links {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
 }
 
 /* Narrow Viewports (below 480px) */
@@ -2126,38 +2160,42 @@ textarea.form-input {
     flex-direction: column;
     gap: 8px;
   }
-  
   .gender-box {
     padding: 12px;
   }
-  
   .conf-box {
     padding: 24px 16px !important;
   }
-  
   .conf-title {
     font-size: 1.5rem !important;
   }
-  
   .conf-details-card {
     padding: 16px !important;
     gap: 12px;
   }
-  
-  /* Stack details row to prevent text clipping */
   .conf-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 4px;
     padding-bottom: 8px;
   }
-  
   .conf-row .conf-val {
     text-align: left;
   }
-  
   .conf-support-row {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+  .doctor-card-actions {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  .doctor-card-actions .rating-badge {
+    margin-bottom: 4px !important;
+  }
+  .view-profile-btn {
+    width: 100% !important;
   }
 }
