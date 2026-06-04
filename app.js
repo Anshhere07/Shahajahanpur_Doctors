@@ -239,8 +239,8 @@ const DOCTORS = [
     avatar: "https://www.drshakirneurosurgeon.com/img/Shakir_about.jpg",
     bio: "Dr. Shakir is a highly qualified and skilled Consultant Neurosurgeon in Shahjahanpur. He specializes in micro-neurosurgery, complex brain tumor surgeries, endoscopic spine procedures, disc replacement surgeries, and trauma care management.",
     socials: {
-      instagram: "https://www.instagram.com/",
-      facebook: "https://www.facebook.com/",
+      instagram: "https://www.instagram.com/neurosurgeon_doc?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/msshakirsha",
       gmb: "https://www.google.com/search?q=Dr+Shakir+Neurosurgeon+Shahjahanpur",
       website: "https://www.drshakirneurosurgeon.com/"
     },
