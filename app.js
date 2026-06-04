@@ -583,11 +583,11 @@ function renderDoctorProfile() {
         <div class="profile-cta-contact-row">
           <a href="https://wa.me/918707665217?text=Hello%20MagnumKare%20Support,%20I%20am%20a%20referred%20partner%20interested%20in%20instantly%20booking%20an%20appointment%20with%20${encodeURIComponent(doc.name)}." target="_blank" class="btn-whatsapp">
             <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
-            <span>WhatsApp Clinic (8707665217)</span>
+            <span>Book by WhatsApp</span>
           </a>
           <a href="tel:+918707665217" class="btn-call">
             <i data-lucide="phone" style="width: 16px; height: 16px;"></i>
-            <span>Call Clinic (8707665217)</span>
+            <span>Call Clinic</span>
           </a>
         </div>
       </div>
