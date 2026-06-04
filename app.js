@@ -305,7 +305,7 @@ const DOCTORS = [
     hospital: "Neeraj Chest Care Centre",
     fees: "₹400",
     location: "Jail Road, Bijlipura, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=300&auto=format&fit=crop",
+    avatar: "assets/images/shubham_jain.png",
     bio: "Dr. Shubham Jain is a highly qualified pulmonologist and chest specialist practicing in Shahjahanpur. Operating out of the Neeraj Chest Care Centre, he specializes in respiratory medicine, offering comprehensive diagnostic and therapeutic care for asthma, chronic obstructive pulmonary disease (COPD), tuberculosis (TB), chronic cough, pneumonia, and complex chest infections.",
     socials: {
       instagram: "https://www.instagram.com/chestphysician.spn?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
