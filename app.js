@@ -581,11 +581,11 @@ function renderDoctorProfile() {
           </button>
         </div>
         <div class="profile-cta-contact-row">
-          <a href="https://wa.me/918707665217?text=Hello%20MagnumKare%20Support,%20I%20am%20a%20referred%20partner%20interested%20in%20instantly%20booking%20an%20appointment%20with%20${encodeURIComponent(doc.name)}." target="_blank" class="btn-whatsapp" id="profile-whatsapp-btn">
+          <a href="https://wa.me/919336300420?text=Hello%20MagnumKare%20Support,%20I%20am%20a%20referred%20partner%20interested%20in%20instantly%20booking%20an%20appointment%20with%20${encodeURIComponent(doc.name)}." target="_blank" class="btn-whatsapp" id="profile-whatsapp-btn">
             <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
             <span>Book by WhatsApp</span>
           </a>
-          <a href="tel:+918707665217" class="btn-call" id="profile-call-btn">
+          <a href="tel:+919336300420" class="btn-call" id="profile-call-btn">
             <i data-lucide="phone" style="width: 16px; height: 16px;"></i>
             <span>Book by Call</span>
           </a>
@@ -594,7 +594,11 @@ function renderDoctorProfile() {
     </div>
   `;
   
-  document.getElementById("watch-testimonials-btn").addEventListener("click", () => openTestimonialsDrawer());
+  document.getElementById("watch-testimonials-btn").addEventListener("click", () => {
+    if (doc.socials && doc.socials.instagram) {
+      window.open(doc.socials.instagram, "_blank");
+    }
+  });
   document.getElementById("profile-book-btn").addEventListener("click", () => initBookingForm());
   document.getElementById("profile-whatsapp-btn").addEventListener("click", () => {
     showToast("WhatsApp Booking", `Redirecting to WhatsApp to book with ${doc.name}...`, "success");
@@ -945,7 +949,7 @@ function handleBookingSubmit(e) {
 Please confirm the appointment slot and dispatch patient instructions.`;
   
   const encodedMsg = encodeURIComponent(whatsappText);
-  const whatsappUrl = `https://wa.me/918707665217?text=${encodedMsg}`;
+  const whatsappUrl = `https://wa.me/919336300420?text=${encodedMsg}`;
   
   // Clear form
   DOM.bookingFormEl.reset();
@@ -1145,11 +1149,11 @@ function renderConfirmationCard(booking) {
 
       <!-- WhatsApp and Call Support Actions directly containing Referral Details -->
       <div class="conf-support-row">
-        <a href="https://wa.me/918707665217?text=Hello%20MagnumKare%20Helpdesk,%20here%20are%20the%20details%20for%20Patient%20Referral%20ID%20${booking.id}.%20Patient:%20${encodeURIComponent(booking.patientName)}%20(${booking.age}%20yrs),%20referred%20to%20Dr.%20${encodeURIComponent(booking.doctorName)}%20for%20${booking.date}%20at%20${booking.time}.%20Status:%20${booking.status.toUpperCase()}." target="_blank" class="btn-whatsapp" title="WhatsApp Referral Details to MagnumKare">
+        <a href="https://wa.me/919336300420?text=Hello%20MagnumKare%20Helpdesk,%20here%20are%20the%20details%20for%20Patient%20Referral%20ID%20${booking.id}.%20Patient:%20${encodeURIComponent(booking.patientName)}%20(${booking.age}%20yrs),%20referred%20to%20Dr.%20${encodeURIComponent(booking.doctorName)}%20for%20${booking.date}%20at%20${booking.time}.%20Status:%20${booking.status.toUpperCase()}." target="_blank" class="btn-whatsapp" title="WhatsApp Referral Details to MagnumKare">
           <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
           <span>WhatsApp Details</span>
         </a>
-        <a href="tel:+918707665217" class="btn-call" title="Call MagnumKare Helpdesk Support">
+        <a href="tel:+919336300420" class="btn-call" title="Call MagnumKare Helpdesk Support">
           <i data-lucide="phone" style="width: 16px; height: 16px;"></i>
           <span>Call Helpdesk</span>
         </a>
