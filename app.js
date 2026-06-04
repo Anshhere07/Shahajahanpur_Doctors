@@ -902,27 +902,27 @@ function handleBookingSubmit(e) {
     date: bDate,
     time: bTime,
     reportName: State.uploadedFileName,
-    status: "pending",
+    status: "confirmed",
     timestamp: new Date().toISOString()
   };
   
   State.bookings.unshift(newBooking);
   localStorage.setItem("magnum_bookings", JSON.stringify(State.bookings));
   
-  // 1. Initial State: Booking is Pending
+  // 1. Initial State: Booking is Confirmed
   pushNotification(
     bookingId, 
-    "pending", 
-    `Referral request submitted. Patient ${patientName} referred to ${doc.name} for ${bDate} at ${bTime}. Status is currently PENDING approval.`
+    "confirmed", 
+    `Appointment Approved! Dr. ${doc.name} will see patient ${patientName} on ${bDate} at ${bTime}.`
   );
   
   showToast(
-    "Booking Submitted", 
-    `Referral request for ${patientName} is processed under ID: ${bookingId}`, 
-    "info"
+    "Appointment Confirmed!", 
+    `Dr. ${doc.name} has accepted the referral for ${patientName}.`, 
+    "success"
   );
   
-  // Render initial Pending state on screen 5
+  // Render initial Confirmed state on screen 5
   renderConfirmationCard(newBooking);
   navigateTo("confirmation");
   
@@ -952,9 +952,6 @@ Please confirm the appointment slot and dispatch patient instructions.`;
   
   // Open WhatsApp immediately in new tab
   window.open(whatsappUrl, "_blank");
-  
-  // 2. Trigger Status Change Simulation Pipeline (6 seconds)
-  simulateStatusTransition(bookingId);
 }
 
 function simulateStatusTransition(bookingId) {
@@ -1234,6 +1231,13 @@ document.addEventListener("DOMContentLoaded", () => {
   
   // Form submission
   DOM.bookingFormEl.addEventListener("submit", handleBookingSubmit);
+  
+  document.getElementById("form-whatsapp-btn").addEventListener("click", () => {
+    showToast("WhatsApp Booking", "Redirecting to WhatsApp for booking...", "success");
+  });
+  document.getElementById("form-call-btn").addEventListener("click", () => {
+    showToast("Call Booking", "Initiating phone call for booking...", "success");
+  });
   
   // Drag and Drop simulation
   const dropzone = document.getElementById("file-dropzone");
