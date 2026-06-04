@@ -581,13 +581,13 @@ function renderDoctorProfile() {
           </button>
         </div>
         <div class="profile-cta-contact-row">
-          <a href="https://wa.me/918707665217?text=Hello%20MagnumKare%20Support,%20I%20am%20a%20referred%20partner%20interested%20in%20instantly%20booking%20an%20appointment%20with%20${encodeURIComponent(doc.name)}." target="_blank" class="btn-whatsapp">
+          <a href="https://wa.me/918707665217?text=Hello%20MagnumKare%20Support,%20I%20am%20a%20referred%20partner%20interested%20in%20instantly%20booking%20an%20appointment%20with%20${encodeURIComponent(doc.name)}." target="_blank" class="btn-whatsapp" id="profile-whatsapp-btn">
             <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
             <span>Book by WhatsApp</span>
           </a>
-          <a href="tel:+918707665217" class="btn-call">
+          <a href="tel:+918707665217" class="btn-call" id="profile-call-btn">
             <i data-lucide="phone" style="width: 16px; height: 16px;"></i>
-            <span>Call Clinic</span>
+            <span>Book by Call</span>
           </a>
         </div>
       </div>
@@ -596,6 +596,12 @@ function renderDoctorProfile() {
   
   document.getElementById("watch-testimonials-btn").addEventListener("click", () => openTestimonialsDrawer());
   document.getElementById("profile-book-btn").addEventListener("click", () => initBookingForm());
+  document.getElementById("profile-whatsapp-btn").addEventListener("click", () => {
+    showToast("WhatsApp Booking", `Redirecting to WhatsApp to book with ${doc.name}...`, "success");
+  });
+  document.getElementById("profile-call-btn").addEventListener("click", () => {
+    showToast("Call Booking", `Initiating phone call to book with ${doc.name}...`, "success");
+  });
   
   lucide.createIcons();
 }
@@ -1152,7 +1158,7 @@ function renderConfirmationCard(booking) {
         </a>
       </div>
 
-      <button class="btn-secondary-glow" id="conf-notif-btn">
+      <button class="btn-secondary-glow" id="conf-notif-btn" style="display: none !important;">
         <i data-lucide="bell" style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 6px;"></i>
         <span>View Notification Logs</span>
       </button>
