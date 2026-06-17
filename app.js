@@ -407,7 +407,18 @@ const DOM = {
   notifDrawer: document.getElementById("notif-drawer"),
   notifScroll: document.getElementById("notif-scroll"),
   closeNotifBtn: document.getElementById("close-notif-btn"),
-  toastContainer: document.getElementById("toast-container")
+  toastContainer: document.getElementById("toast-container"),
+  
+  // Chatbot Elements
+  chatbotLauncher: document.getElementById("chatbot-launcher"),
+  chatbotLauncherBadge: document.getElementById("chatbot-launcher-badge"),
+  chatbotPanel: document.getElementById("chatbot-panel"),
+  chatbotMessagesContainer: document.getElementById("chatbot-messages-container"),
+  chatbotTextInput: document.getElementById("chatbot-text-input"),
+  chatbotSendBtn: document.getElementById("chatbot-send-btn"),
+  chatbotCloseBtn: document.getElementById("chatbot-close-btn"),
+  chatbotAttachBtn: document.getElementById("chatbot-attach-btn"),
+  chatbotFileInput: document.getElementById("chatbot-file-input")
 };
 
 // --- SPA Router ---
@@ -1305,4 +1316,256 @@ document.addEventListener("DOMContentLoaded", () => {
   const unreads = State.notifications.filter(n => !localStorage.getItem(`notif_read_${n.id}`));
   State.unreadNotificationsCount = Math.min(unreads.length, 9);
   updateNotificationUI();
+
+  // ==========================================
+  // AI CHATBOT INTEGRATION LOGIC
+  // ==========================================
+  
+  State.chatHistory = [];
+  
+  // 7-day retention validation
+  const chatTime = localStorage.getItem("magnum_chat_history_time");
+  if (chatTime) {
+    const elapsed = Date.now() - parseInt(chatTime, 10);
+    if (elapsed > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem("magnum_chat_history");
+      localStorage.removeItem("magnum_chat_history_time");
+      sessionStorage.removeItem("magnum_session_images");
+    }
+  }
+
+  const savedHistory = localStorage.getItem("magnum_chat_history");
+  if (savedHistory) {
+    State.chatHistory = JSON.parse(savedHistory);
+  }
+
+  function renderChatHistory() {
+    if (!DOM.chatbotMessagesContainer) return;
+    DOM.chatbotMessagesContainer.innerHTML = "";
+    if (State.chatHistory.length === 0) {
+      appendMessage("bot", "Hello! I'm your MagnumKare AI assistant. Share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!");
+    } else {
+      State.chatHistory.forEach(msg => {
+        renderMessageBubble(msg);
+      });
+    }
+  }
+
+  function appendMessage(sender, text, attachmentUrl = null, doctors = []) {
+    const msg = {
+      sender,
+      text,
+      timestamp: new Date().toISOString(),
+      attachmentUrl,
+      doctors
+    };
+    State.chatHistory.push(msg);
+    localStorage.setItem("magnum_chat_history", JSON.stringify(State.chatHistory));
+    if (!localStorage.getItem("magnum_chat_history_time")) {
+      localStorage.setItem("magnum_chat_history_time", Date.now().toString());
+    }
+    renderMessageBubble(msg);
+  }
+
+  function renderMessageBubble(msg) {
+    if (!DOM.chatbotMessagesContainer) return;
+    
+    const wrapper = document.createElement("div");
+    wrapper.className = `chatbot-msg-wrapper ${msg.sender}`;
+    
+    const bubble = document.createElement("div");
+    bubble.className = "chatbot-msg-bubble";
+    
+    if (msg.attachmentUrl) {
+      const img = document.createElement("img");
+      img.src = msg.attachmentUrl;
+      img.className = "chatbot-msg-attachment";
+      img.alt = "Report Image";
+      img.addEventListener("click", () => {
+        window.open(msg.attachmentUrl, "_blank");
+      });
+      bubble.appendChild(img);
+    }
+    
+    if (msg.text) {
+      const textSpan = document.createElement("span");
+      textSpan.innerText = msg.text;
+      bubble.appendChild(textSpan);
+    }
+    
+    if (msg.doctors && msg.doctors.length > 0) {
+      msg.doctors.forEach(docId => {
+        const doc = DOCTORS.find(d => d.id === docId);
+        if (doc) {
+          const specLabel = SPECIALTIES[doc.specialty] || "Specialist";
+          const docCard = document.createElement("div");
+          docCard.className = "chatbot-doctor-card";
+          docCard.innerHTML = `
+            <img src="${doc.avatar}" class="chatbot-doc-avatar" alt="${doc.name}">
+            <div class="chatbot-doc-info">
+              <div class="chatbot-doc-name">${doc.name}</div>
+              <div class="chatbot-doc-spec">${specLabel} • ${doc.hospital}</div>
+            </div>
+            <button class="chatbot-doc-link" onclick="openDoctorFromChat('${doc.id}')">
+              <span>View Profile</span>
+              <i data-lucide="arrow-right" style="width:12px; height:12px; stroke:#fff;"></i>
+            </button>
+          `;
+          bubble.appendChild(docCard);
+        }
+      });
+    }
+    
+    wrapper.appendChild(bubble);
+    
+    const date = new Date(msg.timestamp);
+    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeDiv = document.createElement("div");
+    timeDiv.className = "chatbot-msg-time";
+    timeDiv.innerText = timeStr;
+    wrapper.appendChild(timeDiv);
+    
+    DOM.chatbotMessagesContainer.appendChild(wrapper);
+    DOM.chatbotMessagesContainer.scrollTop = DOM.chatbotMessagesContainer.scrollHeight;
+    lucide.createIcons();
+  }
+
+  window.openDoctorFromChat = function(docId) {
+    const doc = DOCTORS.find(d => d.id === docId);
+    if (doc) {
+      selectDoctor(doc);
+      closeChatbot();
+    }
+  };
+
+  function openChatbot() {
+    DOM.chatbotPanel.classList.add("active");
+    DOM.chatbotLauncherBadge.classList.remove("active");
+    renderChatHistory();
+  }
+  
+  function closeChatbot() {
+    DOM.chatbotPanel.classList.remove("active");
+  }
+
+  function handleSendMessage() {
+    const text = DOM.chatbotTextInput.value.trim();
+    if (!text) return;
+    
+    appendMessage("user", text);
+    DOM.chatbotTextInput.value = "";
+    
+    setTimeout(() => {
+      analyzeSymptomsAndRespond(text);
+    }, 1000);
+  }
+
+  function analyzeSymptomsAndRespond(userText) {
+    const normalized = userText.toLowerCase();
+    
+    const keywordMap = {
+      eye: ["eye", "eyes", "vision", "cataract", "blind", "blurry", "glasses", "sight", "glaucoma", "redness", "conjunctivitis"],
+      pediatric: ["child", "baby", "newborn", "kid", "kids", "infant", "pediatric", "teething", "vaccination", "picu", "crying"],
+      gyne: ["pregnant", "pregnancy", "delivery", "period", "periods", "gynecologist", "gynaecologist", "ivf", "fertility", "uterus", "ovary", "menstruation"],
+      dental: ["tooth", "teeth", "dentist", "braces", "dental", "aligners", "gums", "cavity", "toothache", "mouth", "dental implant"],
+      patho: ["blood test", "lab report", "biochemistry", "pathology", "hormone", "thyroid test", "tumor", "diagnostic"],
+      neuro: ["brain", "spine", "neuro", "nerve", "neurologist", "neurosurgeon", "disc", "back pain", "paralysis", "stroke", "migraine", "headache", "seizure"],
+      ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho"],
+      derma: ["skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss"],
+      chest: ["cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis"],
+      medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection"]
+    };
+
+    let matchedCategory = null;
+    let maxMatches = 0;
+    
+    Object.keys(keywordMap).forEach(category => {
+      let matches = 0;
+      keywordMap[category].forEach(keyword => {
+        if (normalized.includes(keyword)) {
+          matches++;
+        }
+      });
+      if (matches > maxMatches) {
+        maxMatches = matches;
+        matchedCategory = category;
+      }
+    });
+
+    if (matchedCategory && maxMatches > 0) {
+      const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
+      if (matchedDocs.length > 0) {
+        const docIds = matchedDocs.map(d => d.id);
+        const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
+        appendMessage(
+          "bot", 
+          `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`, 
+          null, 
+          docIds
+        );
+        return;
+      }
+    }
+
+    const medicineDocs = DOCTORS.filter(d => d.specialty === "medicine");
+    const docIds = medicineDocs.map(d => d.id);
+    appendMessage(
+      "bot", 
+      "I couldn't identify a specific specialty for those symptoms. For general concerns (fever, cold, blood pressure, fatigue), please check our General Medicine specialist:", 
+      null, 
+      docIds
+    );
+  }
+
+  // Register Chatbot Listeners
+  DOM.chatbotLauncher.addEventListener("click", () => {
+    if (DOM.chatbotPanel.classList.contains("active")) {
+      closeChatbot();
+    } else {
+      openChatbot();
+    }
+  });
+  
+  DOM.chatbotCloseBtn.addEventListener("click", closeChatbot);
+  DOM.chatbotSendBtn.addEventListener("click", handleSendMessage);
+  DOM.chatbotTextInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      handleSendMessage();
+    }
+  });
+
+  DOM.chatbotAttachBtn.addEventListener("click", () => {
+    DOM.chatbotFileInput.click();
+  });
+  
+  DOM.chatbotFileInput.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      showToast("Invalid File", "Please select a valid image report.", "warning");
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const base64Url = evt.target.result;
+      
+      let cachedImages = [];
+      const stored = sessionStorage.getItem("magnum_session_images");
+      if (stored) {
+        cachedImages = JSON.parse(stored);
+      }
+      cachedImages.push(base64Url);
+      sessionStorage.setItem("magnum_session_images", JSON.stringify(cachedImages));
+      
+      appendMessage("user", "Attached report image:", base64Url);
+      
+      setTimeout(() => {
+        appendMessage("bot", "Thank you for sharing your report. It has been cached for this session. Please describe your symptoms so I can recommend a suitable doctor.");
+      }, 1000);
+    };
+    reader.readAsDataURL(file);
+    DOM.chatbotFileInput.value = "";
+  });
 });

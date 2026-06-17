@@ -232,6 +232,47 @@
     </div>
   </aside>
 
+  <!-- AI Chatbot Launcher -->
+  <button class="chatbot-launcher" id="chatbot-launcher" aria-label="Open AI Assistant">
+    <i data-lucide="message-square" class="launcher-icon"></i>
+    <span class="launcher-badge" id="chatbot-launcher-badge"></span>
+  </button>
+
+  <!-- AI Chatbot Panel -->
+  <aside class="chatbot-panel" id="chatbot-panel">
+    <div class="chatbot-header">
+      <div class="chatbot-header-info">
+        <div class="chatbot-status-dot"></div>
+        <div>
+          <h4 class="chatbot-header-title">MagnumKare AI</h4>
+          <span class="chatbot-header-subtitle">Symptom Assistant</span>
+        </div>
+      </div>
+      <button class="chatbot-close-btn" id="chatbot-close-btn" aria-label="Close chat">
+        <i data-lucide="x"></i>
+      </button>
+    </div>
+    
+    <div class="chatbot-messages" id="chatbot-messages-container">
+      <!-- Injected by JavaScript -->
+    </div>
+    
+    <div class="chatbot-input-area">
+      <!-- Hidden file input for report attachment -->
+      <input type="file" id="chatbot-file-input" style="display: none;" accept="image/*">
+      
+      <button class="chatbot-attach-btn" id="chatbot-attach-btn" title="Attach report image">
+        <i data-lucide="image"></i>
+      </button>
+      
+      <input type="text" class="chatbot-input" id="chatbot-text-input" placeholder="Type symptoms (e.g., cough, fever)..." autocomplete="off">
+      
+      <button class="chatbot-send-btn" id="chatbot-send-btn" aria-label="Send message">
+        <i data-lucide="send"></i>
+      </button>
+    </div>
+  </aside>
+
   <!-- Floating Toast Banners Container -->
   <div class="toast-container" id="toast-container"></div>
 
