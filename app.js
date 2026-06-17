@@ -1367,6 +1367,45 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMessageBubble(msg);
   }
 
+  function openBase64InNewTab(dataUrl, title = "Report") {
+    const newTab = window.open();
+    if (!newTab) {
+      showToast("Popup Blocked", "Please allow popups to view the report.", "warning");
+      return;
+    }
+    newTab.document.title = title;
+    if (dataUrl.startsWith("data:application/pdf") || title.toLowerCase().endsWith(".pdf")) {
+      newTab.document.write(`
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body { margin: 0; padding: 0; overflow: hidden; background: #0e1712; }
+              iframe { border: none; width: 100vw; height: 100vh; }
+            </style>
+          </head>
+          <body>
+            <iframe src="${dataUrl}" allowfullscreen></iframe>
+          </body>
+        </html>
+      `);
+    } else {
+      newTab.document.write(`
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body { margin: 0; background: #0e1712; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+              img { max-width: 100%; max-height: 100vh; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border-radius: 8px; }
+            </style>
+          </head>
+          <body><img src="${dataUrl}" alt="Report"></body>
+        </html>
+      `);
+    }
+    newTab.document.close();
+  }
+
   function renderMessageBubble(msg) {
     if (!DOM.chatbotMessagesContainer) return;
     
@@ -1385,8 +1424,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-high-contrast); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${msg.text || "Report.pdf"}</span>
         `;
         pdfBlock.addEventListener("click", () => {
-          const newTab = window.open();
-          newTab.document.write(`<iframe src="${msg.attachmentUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+          openBase64InNewTab(msg.attachmentUrl, msg.text || "Report.pdf");
         });
         bubble.appendChild(pdfBlock);
       } else {
@@ -1395,7 +1433,7 @@ document.addEventListener("DOMContentLoaded", () => {
         img.className = "chatbot-msg-attachment";
         img.alt = "Report Image";
         img.addEventListener("click", () => {
-          window.open(msg.attachmentUrl, "_blank");
+          openBase64InNewTab(msg.attachmentUrl, msg.text || "Report Image");
         });
         bubble.appendChild(img);
       }
