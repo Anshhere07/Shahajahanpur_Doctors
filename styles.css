@@ -2560,4 +2560,7 @@ textarea.form-input {
     border-radius: 0 !important;
     border: none !important;
   }
+  .chatbot-launcher.chatbot-open {
+    display: none !important;
+  }
 }

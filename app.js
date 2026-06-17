@@ -1493,11 +1493,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function openChatbot() {
     DOM.chatbotPanel.classList.add("active");
     DOM.chatbotLauncherBadge.classList.remove("active");
+    DOM.chatbotLauncher.classList.add("chatbot-open");
     renderChatHistory();
   }
   
   function closeChatbot() {
     DOM.chatbotPanel.classList.remove("active");
+    DOM.chatbotLauncher.classList.remove("chatbot-open");
   }
 
   function handleSendMessage() {
@@ -1513,7 +1515,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function analyzeSymptomsAndRespond(userText) {
-    const normalized = userText.toLowerCase();
+    const normalized = userText.toLowerCase().trim();
+    
+    // Check for basic greetings first
+    const greetings = ["hi", "hello", "hey", "hola", "greetings", "namaste", "good morning", "good afternoon", "good evening", "sup", "wassup"];
+    const cleanText = normalized.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
+    
+    if (greetings.includes(cleanText)) {
+      let greetingResponse = "Hello! ";
+      if (cleanText === "good morning") {
+        greetingResponse = "Good morning! ";
+      } else if (cleanText === "good afternoon") {
+        greetingResponse = "Good afternoon! ";
+      } else if (cleanText === "good evening") {
+        greetingResponse = "Good evening! ";
+      } else if (cleanText === "namaste") {
+        greetingResponse = "Namaste! ";
+      }
+      
+      appendMessage(
+        "bot", 
+        greetingResponse + "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!"
+      );
+      return;
+    }
     
     const keywordMap = {
       eye: ["eye", "eyes", "vision", "cataract", "blind", "blurry", "glasses", "sight", "glaucoma", "redness", "conjunctivitis"],
