@@ -1377,17 +1377,31 @@ document.addEventListener("DOMContentLoaded", () => {
     bubble.className = "chatbot-msg-bubble";
     
     if (msg.attachmentUrl) {
-      const img = document.createElement("img");
-      img.src = msg.attachmentUrl;
-      img.className = "chatbot-msg-attachment";
-      img.alt = "Report Image";
-      img.addEventListener("click", () => {
-        window.open(msg.attachmentUrl, "_blank");
-      });
-      bubble.appendChild(img);
+      if (msg.attachmentUrl.startsWith("data:application/pdf") || (msg.text && msg.text.includes(".pdf"))) {
+        const pdfBlock = document.createElement("div");
+        pdfBlock.className = "chatbot-pdf-attachment";
+        pdfBlock.innerHTML = `
+          <i data-lucide="file-text" style="width: 20px; height: 20px; color: #ef4444; flex-shrink: 0;"></i>
+          <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-high-contrast); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${msg.text || "Report.pdf"}</span>
+        `;
+        pdfBlock.addEventListener("click", () => {
+          const newTab = window.open();
+          newTab.document.write(`<iframe src="${msg.attachmentUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+        });
+        bubble.appendChild(pdfBlock);
+      } else {
+        const img = document.createElement("img");
+        img.src = msg.attachmentUrl;
+        img.className = "chatbot-msg-attachment";
+        img.alt = "Report Image";
+        img.addEventListener("click", () => {
+          window.open(msg.attachmentUrl, "_blank");
+        });
+        bubble.appendChild(img);
+      }
     }
     
-    if (msg.text) {
+    if (msg.text && !(msg.attachmentUrl && msg.attachmentUrl.startsWith("data:application/pdf"))) {
       const textSpan = document.createElement("span");
       textSpan.innerText = msg.text;
       bubble.appendChild(textSpan);
@@ -1538,12 +1552,62 @@ document.addEventListener("DOMContentLoaded", () => {
     DOM.chatbotFileInput.click();
   });
   
+  function analyzeReportAndRespond(fileName) {
+    const normalized = fileName.toLowerCase();
+    
+    const reportKeywords = {
+      eye: ["eye", "optom", "vision", "cataract", "glaucoma", "sight", "retina", "blind", "ophthal"],
+      pediatric: ["child", "baby", "pediatric", "neonat", "kid", "infant", "childhood"],
+      gyne: ["preg", "delivery", "period", "gyne", "gynaec", "ivf", "fertility", "uterus", "ovary", "usg", "obstet"],
+      dental: ["dent", "tooth", "teeth", "braces", "aligner", "orthodont", "cavity", "opg"],
+      patho: ["blood", "cbc", "biochem", "patho", "thyroid", "lipid", "urine", "hba1c", "serum", "cholesterol", "liver"],
+      neuro: ["brain", "neuro", "spine", "mri", "eeg", "stroke", "migraine", "headache"],
+      ortho: ["joint", "bone", "fracture", "ortho", "knee", "hip", "ligament", "sprain", "xray", "x-ray"],
+      derma: ["skin", "acne", "pimple", "derma", "hair", "scalp", "allergy", "melasma", "eczema"],
+      chest: ["chest", "lung", "cough", "asthma", "pulmono", "tb", "copd", "pneumonia", "sputum", "respiratory", "bronch"]
+    };
+
+    let matchedCategory = null;
+    
+    Object.keys(reportKeywords).forEach(category => {
+      reportKeywords[category].forEach(keyword => {
+        if (normalized.includes(keyword)) {
+          matchedCategory = category;
+        }
+      });
+    });
+
+    if (matchedCategory) {
+      const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
+      if (matchedDocs.length > 0) {
+        const docIds = matchedDocs.map(d => d.id);
+        const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
+        appendMessage(
+          "bot", 
+          `Report Analysis Complete: The document suggests indicators related to ${specLabel}. Based on these findings, I suggest consulting the following doctor(s):`, 
+          null, 
+          docIds
+        );
+        return;
+      }
+    }
+
+    const medicineDocs = DOCTORS.filter(d => d.specialty === "medicine");
+    const docIds = medicineDocs.map(d => d.id);
+    appendMessage(
+      "bot", 
+      `Report Analysis Complete: We couldn't classify this report's specific department from the file name. For general medical queries and reviews, I suggest consulting a General Medicine specialist:`, 
+      null, 
+      docIds
+    );
+  }
+
   DOM.chatbotFileInput.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
-    if (!file.type.startsWith("image/")) {
-      showToast("Invalid File", "Please select a valid image report.", "warning");
+    if (!file.type.startsWith("image/") && file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
+      showToast("Invalid File", "Please select a valid image or PDF report.", "warning");
       return;
     }
     
@@ -1559,11 +1623,17 @@ document.addEventListener("DOMContentLoaded", () => {
       cachedImages.push(base64Url);
       sessionStorage.setItem("magnum_session_images", JSON.stringify(cachedImages));
       
-      appendMessage("user", "Attached report image:", base64Url);
+      appendMessage("user", file.name, base64Url);
+      
+      appendMessage("bot", `Analyzing report (${file.name})... Please wait.`);
       
       setTimeout(() => {
-        appendMessage("bot", "Thank you for sharing your report. It has been cached for this session. Please describe your symptoms so I can recommend a suitable doctor.");
-      }, 1000);
+        State.chatHistory = State.chatHistory.filter(msg => !msg.text.startsWith("Analyzing report"));
+        localStorage.setItem("magnum_chat_history", JSON.stringify(State.chatHistory));
+        renderChatHistory();
+        
+        analyzeReportAndRespond(file.name);
+      }, 2000);
     };
     reader.readAsDataURL(file);
     DOM.chatbotFileInput.value = "";

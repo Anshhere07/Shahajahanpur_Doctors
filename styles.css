@@ -2408,6 +2408,25 @@ textarea.form-input {
   opacity: 0.9;
 }
 
+.chatbot-pdf-attachment {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  margin-bottom: 8px;
+  max-width: 100%;
+}
+
+.chatbot-pdf-attachment:hover {
+  background: #f1f5f9;
+  border-color: rgba(113, 194, 134, 0.4);
+}
+
 /* Doctor Suggestion Card inside chat */
 .chatbot-doctor-card {
   margin-top: 10px;
