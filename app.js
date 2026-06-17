@@ -272,6 +272,28 @@ const DOCTORS = [
     ]
   },
   {
+    id: "doc-ankitaverma",
+    name: "Dr. Ankita Verma",
+    degrees: "MBBS, MD - Pulmonary Medicine (Chest Specialist)",
+    specialty: "chest",
+    experience: "15+ Years",
+    rating: "4.9",
+    reviewsCount: 145,
+    hospital: "Aaradhya Chest & Respiratory Center",
+    fees: "₹400",
+    location: "Avas Vikas, Shahjahanpur",
+    avatar: "assets/images/ankita_verma.png",
+    bio: "Dr. Ankita Verma is a highly distinguished Pulmonary Medicine specialist and chest specialist in Shahjahanpur. Serving as the chief consultant at Aaradhya Chest & Respiratory Center in Avas Vikas and also consulting at Satyanand Hospital, she holds over 15 years of rich clinical experience. She previously served as an Assistant Professor at Autonomous State Medical College (ASMC), Shahjahanpur, and Senior Resident at Varun Arjun Medical College. She specializes in the diagnosis and management of chronic respiratory diseases, asthma, COPD, tuberculosis (TB), sleep apnea, pneumonia, and complex lung infections, utilizing advanced diagnostic services like Pulmonary Function Tests (PFT).",
+    socials: {
+      instagram: "https://www.instagram.com/dr__ankita_verma?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+      facebook: "https://www.facebook.com/ankita.verma.5245961",
+      gmb: "https://www.google.com/maps/search/Aaradhya+Chest+Respiratory+Center+Dr+Ankita+Verma+Shahjahanpur"
+    },
+    testimonials: [
+      { id: "ak1", patient: "Rohan Verma, Shahjahanpur", text: "Dr. Ankita Verma is an exceptional doctor. Her diagnosis of my father's severe chronic cough was accurate and the treatment gave instant relief. Aaradhya Center is very modern and well-equipped.", thumb: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop" }
+    ]
+  },
+  {
     id: "doc-ushachandra",
     name: "Dr. Usha Chandra",
     degrees: "MBBS, MD (Dermatology) - BHU (Board Certified)",
