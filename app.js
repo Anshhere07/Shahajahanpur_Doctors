@@ -376,8 +376,7 @@ const DOCTORS = [
     avatar: "https://images1-fabric.practo.com/doctor/1380758/dr-akash-69201041276bf.png",
     bio: "Dr. Akash is a highly skilled General & Laparoscopic Surgeon dedicated to providing honest, ethical, and patient-centered care in Shahjahanpur. He has over 7 years of rich clinical experience. He specializes in advanced minimally invasive laparoscopic surgeries for gallstones, hernia, appendicitis, and piles/fissure/fistula, as well as breast surgeries and OPD consultations. He focuses on precise diagnosis, transparent communication, and ensuring a fast, comfortable recovery for all patients close to their home.",
     socials: {
-      gmb: "https://www.google.com/search?q=Gastro+Clinic+27+Hadaf+Shahjahanpur",
-      website: "https://www.practo.com/shahjahanpur/doctor/dr-akash-26-laparoscopic-surgeon"
+      gmb: "https://www.google.com/search?q=Gastro+Clinic+27+Hadaf+Shahjahanpur"
     },
     testimonials: [
       { id: "akash-t1", patient: "Aman Bajpai, Hadaf", text: "Got my laparoscopic gallstone surgery done by Dr. Akash. He explained the procedure very clearly and the recovery was extremely smooth.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
