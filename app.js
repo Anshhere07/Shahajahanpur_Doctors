@@ -1543,9 +1543,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const cleanText = normalized.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
     
     // Detect if user sent message in Hinglish
-    const hinglishWords = ["kya", "hai", "hain", "ko", "se", "ka", "ki", "ke", "me", "mein", "par", "bhi", "hi", "toh", "yaar", "muje", "mujhe", "mera", "meri", "mere", "tum", "tumhara", "tumhari", "aap", "aapka", "aapki", "aapke", "hume", "hamara", "hamari", "hamare", "kar", "karna", "karne", "raha", "rahi", "rahe", "hoga", "hogi", "hoge", "gaya", "gayi", "gaye", "hua", "hui", "hue", "tha", "thi", "the", "ho", "aaj", "kal", "parso", "ab", "kab", "tab", "sab", "ek", "do", "teen", "chaar", "paanch", "kyun", "kyu", "kaise", "kahan", "kaha", "idhar", "udhar", "andar", "bahar", "upar", "neeche", "niche", "paas", "door", "saath", "liye", "bina", "lekin", "magar", "aur", "ya", "kuch", "koi", "symptom", "problem", "dard", "bukhar", "khansi", "sar", "sir", "pair", "aankh", "aankhein", "pet", "daant", "daat", "hath", "haath", "khana", "khaya", "dikhao", "dikhana", "dikha", "chahiye", "bol", "bata", "batao", "suno", "sunna", "dekh", "dekho", "chal", "chalo", "baith", "baitho", "uth", "utho"];
+    const hinglishWords = ["kya", "hai", "hain", "h", "ho", "hal", "haal", "ko", "se", "ka", "ki", "ke", "me", "mein", "par", "bhi", "hi", "toh", "yaar", "muje", "mujhe", "mera", "meri", "mere", "tum", "tumhara", "tumhari", "aap", "aapka", "aapki", "aapke", "hume", "hamara", "hamari", "hamare", "kar", "karna", "karne", "raha", "rahi", "rahe", "hoga", "hogi", "hoge", "gaya", "gayi", "gaye", "hua", "hui", "hue", "tha", "thi", "the", "aaj", "kal", "parso", "ab", "kab", "tab", "sab", "ek", "do", "teen", "chaar", "paanch", "kyun", "kyu", "kaise", "kahan", "kaha", "idhar", "udhar", "andar", "bahar", "upar", "neeche", "niche", "paas", "door", "saath", "liye", "bina", "lekin", "magar", "aur", "ya", "kuch", "koi", "symptom", "problem", "dard", "bukhar", "khansi", "sar", "sir", "pair", "aankh", "aankhein", "pet", "daant", "daat", "hath", "haath", "khana", "khaya", "dikhao", "dikhana", "dikha", "chahiye", "bol", "bata", "batao", "suno", "sunna", "dekh", "dekho", "chal", "chalo", "baith", "baitho", "uth", "utho"];
     const words = cleanText.split(/\s+/);
-    const isHinglish = words.some(word => hinglishWords.includes(word)) || cleanText.includes("namaste");
+    const hinglishGreetings = ["kya haal", "kaise ho", "kaise h", "kaise hain", "sab thik", "sab theek", "sab badiya", "sab badhiya", "kya chal raha", "kya chal rha"];
+    const isHinglishGreeting = hinglishGreetings.some(g => cleanText.includes(g));
+    const isHinglish = words.some(word => hinglishWords.includes(word)) || cleanText.includes("namaste") || isHinglishGreeting;
 
     // Check for abusive words
     const abusiveWords = ["fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick", "pussy", "chutiya", "harami", "kamina", "saala", "kamine", "bhosdike", "gaand", "madarchod", "behenchod", "bhenchod", "bsdk", "luda", "lauda", "loda", "chut", "pandi", "randi", "gandu"];
@@ -1566,10 +1568,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (greetings.includes(cleanText)) {
+    if (greetings.includes(cleanText) || isHinglishGreeting) {
       let greetingResponse = "";
       if (isHinglish) {
-        greetingResponse = "Namaste! Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!";
+        greetingResponse = "Namaste! Main theek hoon. Aap kaise hain? Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!";
       } else {
         let greetText = "Hello! ";
         if (cleanText === "good morning") {
