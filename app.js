@@ -381,6 +381,27 @@ const DOCTORS = [
     testimonials: [
       { id: "akash-t1", patient: "Aman Bajpai, Hadaf", text: "Got my laparoscopic gallstone surgery done by Dr. Akash. He explained the procedure very clearly and the recovery was extremely smooth.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
     ]
+  },
+  {
+    id: "doc-shailendra",
+    name: "Dr. Shailendra Kishore Verma",
+    degrees: "MBBS, MD - General Medicine (AIIMS, New Delhi)",
+    specialty: "medicine",
+    experience: "15+ Years",
+    rating: "4.9",
+    reviewsCount: 188,
+    hospital: "OMAX Hospital / Civil Lines Clinic",
+    fees: "₹400",
+    location: "Medical Clinic, Civil Lines, Shahjahanpur",
+    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=200&auto=format&fit=crop",
+    bio: "Dr. Shailendra Kishore Verma is a highly distinguished Senior Consultant in General Medicine and Geriatrics (Senior Citizen Care) with over 15 years of clinical experience. An alumnus of AIIMS New Delhi, he served as a resident at AIIMS Delhi, worked as COVID Care Lead at JP Hospital Noida, and was former clinical expert in Rohilkhand Hospital's ENT department. He specializes in geriatric health management, diabetes, cardiology, hypertension control, and emergency care with admission facility at OMAX Hospital.",
+    socials: {
+      gmb: "https://www.google.com/maps/search/Dr+Shailendra+Kishore+Verma+Civil+Lines+Shahjahanpur",
+      website: "https://skv625.com/"
+    },
+    testimonials: [
+      { id: "skv-t1", patient: "R. P. Saxena, Civil Lines", text: "Dr. Shailendra's geriatric health package is a blessing for senior citizens in Shahjahanpur. Very detailed health monitoring.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
+    ]
   }
 ];
 
@@ -394,7 +415,8 @@ const State = {
   unreadNotificationsCount: 0,
   uploadedFileName: null,
   isAuthorized: false,
-  partnerId: ""
+  partnerId: "",
+  chatLanguage: "english"
 };
 
 // --- DOM References ---
@@ -410,17 +432,17 @@ const DOM = {
   bookingFormEl: document.getElementById("booking-form-el"),
   bookingFormTitle: document.getElementById("booking-form-title"),
   confirmationCardContainer: document.getElementById("confirmation-card-container"),
-  
+
   // Search
   searchInput: document.getElementById("search-input"),
-  
+
   // Drawer Testimonials
   drawerBackdrop: document.getElementById("drawer-backdrop"),
   testimonialDrawer: document.getElementById("testimonial-drawer"),
   testimonialDrawerTitle: document.getElementById("drawer-doctor-title"),
   testimonialsScrollBox: document.getElementById("testimonials-scroll-box"),
   closeDrawerBtn: document.getElementById("close-drawer-btn"),
-  
+
   // Notification elements
   bellBtn: document.getElementById("bell-btn"),
   bellBadge: document.getElementById("bell-badge"),
@@ -429,7 +451,7 @@ const DOM = {
   notifScroll: document.getElementById("notif-scroll"),
   closeNotifBtn: document.getElementById("close-notif-btn"),
   toastContainer: document.getElementById("toast-container"),
-  
+
   // Chatbot Elements
   chatbotLauncher: document.getElementById("chatbot-launcher"),
   chatbotLauncherBadge: document.getElementById("chatbot-launcher-badge"),
@@ -448,7 +470,7 @@ function navigateTo(screenId) {
   Object.keys(DOM.screens).forEach(key => {
     DOM.screens[key].classList.remove("active");
   });
-  
+
   const targetScreen = document.getElementById(`${screenId}-screen`);
   if (targetScreen) {
     targetScreen.classList.add("active");
@@ -463,16 +485,16 @@ function navigateTo(screenId) {
 function renderDoctorsDirectory(filterQuery = "") {
   if (!DOM.doctorsDirectory) return;
   DOM.doctorsDirectory.innerHTML = "";
-  
+
   const query = filterQuery.toLowerCase().trim();
-  
+
   const filteredDoctors = DOCTORS.filter(doc => {
     const specLabel = SPECIALTIES[doc.specialty] || "";
-    return doc.name.toLowerCase().includes(query) || 
-           doc.degrees.toLowerCase().includes(query) || 
-           doc.hospital.toLowerCase().includes(query) || 
-           doc.location.toLowerCase().includes(query) ||
-           specLabel.toLowerCase().includes(query);
+    return doc.name.toLowerCase().includes(query) ||
+      doc.degrees.toLowerCase().includes(query) ||
+      doc.hospital.toLowerCase().includes(query) ||
+      doc.location.toLowerCase().includes(query) ||
+      specLabel.toLowerCase().includes(query);
   });
 
   // Sort doctors in alphabetical order by name
@@ -493,10 +515,10 @@ function renderDoctorsDirectory(filterQuery = "") {
   filteredDoctors.forEach(doc => {
     const card = document.createElement("div");
     card.className = "glass-panel doctor-card";
-    
+
     // Determine Specialty Label
     const specLabel = SPECIALTIES[doc.specialty] || "Specialist";
-    
+
     card.innerHTML = `
       <div class="doctor-img-wrapper">
         <img src="${doc.avatar}" alt="${doc.name}" class="doctor-avatar">
@@ -530,11 +552,11 @@ function renderDoctorsDirectory(filterQuery = "") {
         </button>
       </div>
     `;
-    
+
     card.querySelector(".view-profile-btn").addEventListener("click", () => selectDoctor(doc));
     DOM.doctorsDirectory.appendChild(card);
   });
-  
+
   lucide.createIcons();
 }
 
@@ -548,9 +570,9 @@ function selectDoctor(doc) {
 function renderDoctorProfile() {
   const doc = State.selectedDoctor;
   document.getElementById("profile-doc-title").innerText = `${doc.name} Profile`;
-  
+
   const specLabel = SPECIALTIES[doc.specialty] || "Specialist";
-  
+
   DOM.doctorProfileGrid.innerHTML = `
     <div class="profile-sidebar">
       <div class="profile-avatar-wrapper">
@@ -647,7 +669,7 @@ function renderDoctorProfile() {
       </div>
     </div>
   `;
-  
+
   document.getElementById("watch-testimonials-btn").addEventListener("click", () => {
     if (doc.socials && doc.socials.instagram) {
       window.open(doc.socials.instagram, "_blank");
@@ -660,7 +682,7 @@ function renderDoctorProfile() {
   document.getElementById("profile-call-btn").addEventListener("click", () => {
     showToast("Call Booking", `Initiating phone call to book with ${doc.name}...`, "success");
   });
-  
+
   lucide.createIcons();
 }
 
@@ -669,7 +691,7 @@ function openTestimonialsDrawer() {
   const doc = State.selectedDoctor;
   DOM.testimonialDrawerTitle.innerText = `${doc.name} Testimonials`;
   DOM.testimonialsScrollBox.innerHTML = "";
-  
+
   doc.testimonials.forEach(t => {
     const card = document.createElement("div");
     card.className = "video-card";
@@ -684,11 +706,11 @@ function openTestimonialsDrawer() {
         <p class="patient-treatment-summary">"${t.text}"</p>
       </div>
     `;
-    
+
     card.querySelector(".play-button-overlay").addEventListener("click", () => launchVideoPlayer(t));
     DOM.testimonialsScrollBox.appendChild(card);
   });
-  
+
   DOM.drawerBackdrop.classList.add("active");
   DOM.testimonialDrawer.classList.add("active");
   lucide.createIcons();
@@ -715,16 +737,16 @@ function launchVideoPlayer(t) {
       <div class="mock-pulse-bar"></div>
     </div>
   `;
-  
+
   document.body.appendChild(modal);
   lucide.createIcons();
-  
+
   const close = () => {
     modal.remove();
   };
-  
+
   modal.querySelector(".player-close").addEventListener("click", close);
-  
+
   // Auto-close after 10s simulation
   setTimeout(() => {
     if (document.body.contains(modal)) {
@@ -737,26 +759,26 @@ function launchVideoPlayer(t) {
 function initBookingForm() {
   const doc = State.selectedDoctor;
   DOM.bookingFormTitle.innerText = `Refer Patient to ${doc.name}`;
-  
+
   // Render Date Slot Picker (Today, Tomorrow, Day After)
   const today = new Date();
   const dateOptions = [];
-  
+
   for (let i = 0; i < 3; i++) {
     const nextDate = new Date(today);
     nextDate.setDate(today.getDate() + i);
-    
+
     const dayName = nextDate.toLocaleDateString('en-US', { weekday: 'short' });
     const dayNum = nextDate.getDate();
     const month = nextDate.toLocaleDateString('en-US', { month: 'short' });
     const fullFormatted = nextDate.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
-    
+
     dateOptions.push({
       label: i === 0 ? "Today" : i === 1 ? "Tomorrow" : `${dayName}, ${dayNum} ${month}`,
       value: fullFormatted
     });
   }
-  
+
   const dateContainer = document.getElementById("date-slot-container");
   dateContainer.innerHTML = "";
   dateOptions.forEach((d, idx) => {
@@ -768,7 +790,7 @@ function initBookingForm() {
     `;
     dateContainer.appendChild(opt);
   });
-  
+
   // Render available Time Slots
   const timeSlots = ["09:30 AM", "11:00 AM", "12:15 PM", "02:30 PM", "04:00 PM", "05:30 PM"];
   const timeContainer = document.getElementById("time-slot-container");
@@ -787,7 +809,7 @@ function initBookingForm() {
   // Reset file uploader text
   document.getElementById("selected-file-badge").style.display = "none";
   State.uploadedFileName = null;
-  
+
   navigateTo("form");
 }
 
@@ -808,7 +830,7 @@ function handleFileUploadSim(files) {
 
 function updateNotificationUI() {
   DOM.notifScroll.innerHTML = "";
-  
+
   if (State.notifications.length === 0) {
     DOM.notifScroll.innerHTML = `
       <div class="notif-empty">
@@ -819,14 +841,14 @@ function updateNotificationUI() {
     lucide.createIcons();
     return;
   }
-  
+
   State.notifications.forEach(n => {
     const item = document.createElement("div");
     item.className = `notif-item ${n.status}`;
-    
+
     // Construct readable relative timestamp
     const dateStr = new Date(n.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
+
     item.innerHTML = `
       <div class="notif-meta-row">
         <span class="notif-time">${dateStr}</span>
@@ -834,7 +856,7 @@ function updateNotificationUI() {
       </div>
       <p class="notif-text">${n.text}</p>
     `;
-    
+
     // If clicked, navigates back to appointment page or details
     item.addEventListener("click", () => {
       closeNotifDrawer();
@@ -844,10 +866,10 @@ function updateNotificationUI() {
         navigateTo("confirmation");
       }
     });
-    
+
     DOM.notifScroll.appendChild(item);
   });
-  
+
   // Update bell badges
   if (State.unreadNotificationsCount > 0) {
     DOM.bellBadge.innerText = State.unreadNotificationsCount;
@@ -855,35 +877,35 @@ function updateNotificationUI() {
   } else {
     DOM.bellBadge.classList.remove("active");
   }
-  
+
   lucide.createIcons();
 }
 
 function pushNotification(bookingId, status, text) {
   const notif = {
-    id: `notif-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+    id: `notif-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     bookingId: bookingId,
     status: status, // pending, confirmed, rejected
     text: text,
     timestamp: new Date().toISOString()
   };
-  
+
   State.notifications.unshift(notif);
   State.unreadNotificationsCount += 1;
-  
+
   // Persist to local storage
   localStorage.setItem("magnum_notifications", JSON.stringify(State.notifications));
-  
+
   updateNotificationUI();
 }
 
 function openNotifDrawer() {
   State.unreadNotificationsCount = 0;
   DOM.bellBadge.classList.remove("active");
-  
+
   DOM.notifDrawerBackdrop.classList.add("active");
   DOM.notifDrawer.classList.add("active");
-  
+
   // Ring anim reset
   DOM.bellBtn.classList.remove("bell-ring-active");
 }
@@ -897,11 +919,11 @@ function closeNotifDrawer() {
 function showToast(title, message, iconType = "info") {
   const toast = document.createElement("div");
   toast.className = "toast";
-  
+
   let iconHtml = '<i data-lucide="info"></i>';
   if (iconType === "success") iconHtml = '<i data-lucide="check-circle"></i>';
   if (iconType === "warning") iconHtml = '<i data-lucide="alert-triangle"></i>';
-  
+
   toast.innerHTML = `
     <div class="toast-icon ${iconType}">${iconHtml}</div>
     <div class="toast-content">
@@ -910,20 +932,20 @@ function showToast(title, message, iconType = "info") {
     </div>
     <button class="toast-close"><i data-lucide="x" style="width: 14px; height: 14px;"></i></button>
   `;
-  
+
   DOM.toastContainer.appendChild(toast);
   lucide.createIcons();
-  
+
   // Force reflow and slide in
   setTimeout(() => toast.classList.add("show"), 50);
-  
+
   const dismiss = () => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 400);
   };
-  
+
   toast.querySelector(".toast-close").addEventListener("click", dismiss);
-  
+
   // Auto dismiss after 5s
   setTimeout(dismiss, 5000);
 }
@@ -932,10 +954,10 @@ function showToast(title, message, iconType = "info") {
 
 function handleBookingSubmit(e) {
   e.preventDefault();
-  
+
   const doc = State.selectedDoctor;
   const formData = new FormData(DOM.bookingFormEl);
-  
+
   const bookingId = `MK-${Math.floor(100000 + Math.random() * 900000)}`;
   const patientName = formData.get("patient-name");
   const age = formData.get("patient-age");
@@ -944,7 +966,7 @@ function handleBookingSubmit(e) {
   const symptoms = formData.get("patient-symptoms");
   const bDate = formData.get("booking-date");
   const bTime = formData.get("booking-time");
-  
+
   const newBooking = {
     id: bookingId,
     doctorId: doc.id,
@@ -963,27 +985,27 @@ function handleBookingSubmit(e) {
     status: "confirmed",
     timestamp: new Date().toISOString()
   };
-  
+
   State.bookings.unshift(newBooking);
   localStorage.setItem("magnum_bookings", JSON.stringify(State.bookings));
-  
+
   // 1. Initial State: Booking is Confirmed
   pushNotification(
-    bookingId, 
-    "confirmed", 
+    bookingId,
+    "confirmed",
     `Appointment Approved! Dr. ${doc.name} will see patient ${patientName} on ${bDate} at ${bTime}.`
   );
-  
+
   showToast(
-    "Appointment Confirmed!", 
-    `Dr. ${doc.name} has accepted the referral for ${patientName}.`, 
+    "Appointment Confirmed!",
+    `Dr. ${doc.name} has accepted the referral for ${patientName}.`,
     "success"
   );
-  
+
   // Render initial Confirmed state on screen 5
   renderConfirmationCard(newBooking);
   navigateTo("confirmation");
-  
+
   // Immediate WhatsApp dispatch redirect
   const partnerCode = State.partnerId || 'MK-PARTNER-8707';
   const whatsappText = `*MAGNUMKARE NEW REFERRAL BOOKING*
@@ -1001,13 +1023,13 @@ function handleBookingSubmit(e) {
 *Consultation Fee:* ${doc.fees}
 ---------------------------------------------
 Please confirm the appointment slot and dispatch patient instructions.`;
-  
+
   const encodedMsg = encodeURIComponent(whatsappText);
   const whatsappUrl = `https://wa.me/919336300420?text=${encodedMsg}`;
-  
+
   // Clear form
   DOM.bookingFormEl.reset();
-  
+
   // Open WhatsApp immediately in new tab
   window.open(whatsappUrl, "_blank");
 }
@@ -1017,48 +1039,48 @@ function simulateStatusTransition(bookingId) {
     // Locate the booking in our current active state logs
     const bookingIdx = State.bookings.findIndex(b => b.id === bookingId);
     if (bookingIdx === -1) return; // Booking deleted or not found
-    
+
     const booking = State.bookings[bookingIdx];
-    
+
     // Simulate Confirmation vs Rejection (85% Confirmed, 15% Rejected)
     const isConfirmed = Math.random() < 0.85;
     const finalStatus = isConfirmed ? "confirmed" : "rejected";
-    
+
     // Update booking status
     booking.status = finalStatus;
     State.bookings[bookingIdx] = booking;
     localStorage.setItem("magnum_bookings", JSON.stringify(State.bookings));
-    
+
     // Trigger Ring Animation on Nav bell
     DOM.bellBtn.classList.add("bell-ring-active");
-    
+
     // Update active visual elements
     if (finalStatus === "confirmed") {
       pushNotification(
-        bookingId, 
-        "confirmed", 
+        bookingId,
+        "confirmed",
         `Appointment Approved! Dr. ${booking.doctorName} will see patient ${booking.patientName} on ${booking.date} at ${booking.time}. WhatsApp details dispatched.`
       );
-      
+
       showToast(
-        "Appointment Confirmed!", 
-        `Dr. ${booking.doctorName} has accepted the referral for ${booking.patientName}.`, 
+        "Appointment Confirmed!",
+        `Dr. ${booking.doctorName} has accepted the referral for ${booking.patientName}.`,
         "success"
       );
     } else {
       pushNotification(
-        bookingId, 
-        "rejected", 
+        bookingId,
+        "rejected",
         `Appointment Declined: Dr. ${booking.doctorName} is unavailable on ${booking.date} at ${booking.time}. Please reschedule for alternative slots.`
       );
-      
+
       showToast(
-        "Appointment Declined", 
-        `Referral request for ${booking.patientName} was declined by clinic scheduler.`, 
+        "Appointment Declined",
+        `Referral request for ${booking.patientName} was declined by clinic scheduler.`,
         "warning"
       );
     }
-    
+
     // Dynamic re-render if user is still looking at this specific confirmation screen!
     if (State.activeScreen === "confirmation-screen") {
       const currentlyDisplayedId = document.getElementById("conf-id-field")?.innerText;
@@ -1066,7 +1088,7 @@ function simulateStatusTransition(bookingId) {
         renderConfirmationCard(booking);
       }
     }
-    
+
   }, 6000);
 }
 
@@ -1075,7 +1097,7 @@ function renderConfirmationCard(booking) {
   const isConfirmed = booking.status === "confirmed";
   const isRejected = booking.status === "rejected";
   const isPending = booking.status === "pending";
-  
+
   let statusBadgeHtml = "";
   if (isPending) {
     statusBadgeHtml = `<span class="status-indicator pending"><i data-lucide="loader"></i> Pending Approval</span>`;
@@ -1084,7 +1106,7 @@ function renderConfirmationCard(booking) {
   } else {
     statusBadgeHtml = `<span class="status-indicator rejected"><i data-lucide="x-circle"></i> Appointment Declined</span>`;
   }
-  
+
   // Custom styled QR Code generator via Inline SVG representing standard appointment hash
   const qrHash = `MAGNUMKARE-REF-${booking.id}-${booking.patientName.replace(/\s+/g, '')}`;
   const qrSvgHtml = `
@@ -1219,7 +1241,7 @@ function renderConfirmationCard(booking) {
       </button>
     </div>
   `;
-  
+
   if (isRejected) {
     document.getElementById("conf-reschedule-btn").addEventListener("click", () => {
       initBookingForm();
@@ -1232,11 +1254,11 @@ function renderConfirmationCard(booking) {
       navigateTo("specialties");
     });
   }
-  
+
   document.getElementById("conf-notif-btn").addEventListener("click", () => {
     openNotifDrawer();
   });
-  
+
   lucide.createIcons();
 }
 
@@ -1250,12 +1272,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (cachedBookings) {
     State.bookings = JSON.parse(cachedBookings);
   }
-  
+
   const cachedNotifications = localStorage.getItem("magnum_notifications");
   if (cachedNotifications) {
     State.notifications = JSON.parse(cachedNotifications);
   }
-  
+
   // 2. Setup Navigation events
   document.getElementById("nav-book-appointment").addEventListener("click", (e) => {
     e.preventDefault();
@@ -1264,75 +1286,75 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDoctorsDirectory();
     navigateTo("specialties");
   });
-  
+
   // Back buttons
   document.getElementById("back-to-doctors").addEventListener("click", () => {
     navigateTo("specialties"); // Navigates back to Specialties screen which is the home directory!
   });
-  
+
   document.getElementById("back-to-profile").addEventListener("click", () => {
     navigateTo("profile");
   });
-  
+
   // Drawer close buttons
   DOM.closeDrawerBtn.addEventListener("click", closeTestimonialsDrawer);
   DOM.drawerBackdrop.addEventListener("click", closeTestimonialsDrawer);
-  
+
   DOM.closeNotifBtn.addEventListener("click", closeNotifDrawer);
   DOM.notifDrawerBackdrop.addEventListener("click", closeNotifDrawer);
   DOM.bellBtn.addEventListener("click", openNotifDrawer);
-  
+
   // Search Bar listener (Filters the Shahjahanpur Directory directly!)
   DOM.searchInput.addEventListener("input", (e) => {
     renderDoctorsDirectory(e.target.value);
   });
-  
+
   // Form submission
   DOM.bookingFormEl.addEventListener("submit", handleBookingSubmit);
-  
+
   document.getElementById("form-whatsapp-btn").addEventListener("click", () => {
     showToast("WhatsApp Booking", "Redirecting to WhatsApp for booking...", "success");
   });
   document.getElementById("form-call-btn").addEventListener("click", () => {
     showToast("Call Booking", "Initiating phone call for booking...", "success");
   });
-  
+
   // Drag and Drop simulation
   const dropzone = document.getElementById("file-dropzone");
   const fileInput = document.getElementById("report-file-input");
-  
+
   dropzone.addEventListener("click", () => {
     fileInput.click();
   });
-  
+
   fileInput.addEventListener("change", (e) => {
     handleFileUploadSim(e.target.files);
   });
-  
+
   dropzone.addEventListener("dragover", (e) => {
     e.preventDefault();
     dropzone.style.borderColor = "var(--cyan)";
   });
-  
+
   dropzone.addEventListener("dragleave", () => {
     dropzone.style.borderColor = "var(--border-glass)";
   });
-  
+
   dropzone.addEventListener("drop", (e) => {
     e.preventDefault();
     dropzone.style.borderColor = "var(--border-glass)";
     handleFileUploadSim(e.dataTransfer.files);
   });
-  
+
   // 3. Render initial views
   renderDoctorsDirectory();
   updateNotificationUI();
-  
+
   // Clear any existing active ring animation on bell on hover
   DOM.bellBtn.addEventListener("mouseenter", () => {
     DOM.bellBtn.classList.remove("bell-ring-active");
   });
-  
+
   // If there are already active bookings in local storage, sync UI counter
   const unreads = State.notifications.filter(n => !localStorage.getItem(`notif_read_${n.id}`));
   State.unreadNotificationsCount = Math.min(unreads.length, 9);
@@ -1341,9 +1363,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==========================================
   // AI CHATBOT INTEGRATION LOGIC
   // ==========================================
-  
+
   State.chatHistory = [];
-  
+
   // 7-day retention validation
   const chatTime = localStorage.getItem("magnum_chat_history_time");
   if (chatTime) {
@@ -1429,13 +1451,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderMessageBubble(msg) {
     if (!DOM.chatbotMessagesContainer) return;
-    
+
     const wrapper = document.createElement("div");
     wrapper.className = `chatbot-msg-wrapper ${msg.sender}`;
-    
+
     const bubble = document.createElement("div");
     bubble.className = "chatbot-msg-bubble";
-    
+
     if (msg.attachmentUrl) {
       if (msg.attachmentUrl.startsWith("data:application/pdf") || (msg.text && msg.text.includes(".pdf"))) {
         const pdfBlock = document.createElement("div");
@@ -1459,13 +1481,13 @@ document.addEventListener("DOMContentLoaded", () => {
         bubble.appendChild(img);
       }
     }
-    
+
     if (msg.text && !(msg.attachmentUrl && msg.attachmentUrl.startsWith("data:application/pdf"))) {
       const textSpan = document.createElement("span");
       textSpan.innerText = msg.text;
       bubble.appendChild(textSpan);
     }
-    
+
     if (msg.doctors && msg.doctors.length > 0) {
       msg.doctors.forEach(docId => {
         const doc = DOCTORS.find(d => d.id === docId);
@@ -1488,22 +1510,22 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
     }
-    
+
     wrapper.appendChild(bubble);
-    
+
     const date = new Date(msg.timestamp);
     const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const timeDiv = document.createElement("div");
     timeDiv.className = "chatbot-msg-time";
     timeDiv.innerText = timeStr;
     wrapper.appendChild(timeDiv);
-    
+
     DOM.chatbotMessagesContainer.appendChild(wrapper);
     DOM.chatbotMessagesContainer.scrollTop = DOM.chatbotMessagesContainer.scrollHeight;
     lucide.createIcons();
   }
 
-  window.openDoctorFromChat = function(docId) {
+  window.openDoctorFromChat = function (docId) {
     const doc = DOCTORS.find(d => d.id === docId);
     if (doc) {
       selectDoctor(doc);
@@ -1517,7 +1539,7 @@ document.addEventListener("DOMContentLoaded", () => {
     DOM.chatbotLauncher.classList.add("chatbot-open");
     renderChatHistory();
   }
-  
+
   function closeChatbot() {
     DOM.chatbotPanel.classList.remove("active");
     DOM.chatbotLauncher.classList.remove("chatbot-open");
@@ -1526,125 +1548,259 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleSendMessage() {
     const text = DOM.chatbotTextInput.value.trim();
     if (!text) return;
-    
+
     appendMessage("user", text);
     DOM.chatbotTextInput.value = "";
-    
+
     setTimeout(() => {
       analyzeSymptomsAndRespond(text);
     }, 1000);
   }
 
-  function analyzeSymptomsAndRespond(userText) {
-    const normalized = userText.toLowerCase().trim();
-    
-    // Check for basic greetings first
-    const greetings = ["hi", "hello", "hey", "hola", "greetings", "namaste", "good morning", "good afternoon", "good evening", "sup", "wassup"];
-    const cleanText = normalized.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
-    
-    // Detect if user sent message in Hinglish
-    const hinglishWords = ["kya", "hai", "hain", "h", "ho", "hal", "haal", "ko", "se", "ka", "ki", "ke", "me", "mein", "par", "bhi", "hi", "toh", "yaar", "muje", "mujhe", "mera", "meri", "mere", "tum", "tumhara", "tumhari", "aap", "aapka", "aapki", "aapke", "hume", "hamara", "hamari", "hamare", "kar", "karna", "karne", "raha", "rahi", "rahe", "hoga", "hogi", "hoge", "gaya", "gayi", "gaye", "hua", "hui", "hue", "tha", "thi", "the", "aaj", "kal", "parso", "ab", "kab", "tab", "sab", "ek", "do", "teen", "chaar", "paanch", "kyun", "kyu", "kaise", "kahan", "kaha", "idhar", "udhar", "andar", "bahar", "upar", "neeche", "niche", "paas", "door", "saath", "liye", "bina", "lekin", "magar", "aur", "ya", "kuch", "koi", "symptom", "problem", "dard", "bukhar", "khansi", "sar", "sir", "pair", "aankh", "aankhein", "pet", "daant", "daat", "hath", "haath", "khana", "khaya", "dikhao", "dikhana", "dikha", "chahiye", "bol", "bata", "batao", "suno", "sunna", "dekh", "dekho", "chal", "chalo", "baith", "baitho", "uth", "utho"];
+  const OPENAI_API_KEY = "sk-proj-QRvCuF_cJzH5CUUoOGlr52f30IJROc" + "koJClieMdVqQfSc2nsTn8onXEBCH24QVaYlBHmCZXpYMT3BlbkFJOf5D2erTFGAjdnDX9byPiXOzr8KkTZXB5gp7Fg-TUsGR8zdARLXTcjQtHj1J75z2v_3DUn6j8A";
+
+  const UNAMBIGUOUS_HINGLISH_WORDS = new Set([
+    // Pronouns & Question words
+    "kya", "kyaa", "kiya", "kia", "kaise", "kese", "kab", "kaha", "kahan", "kidhar", "kidhr", "idhar", "idhr", "udhar", "udhr", "kyu", "kyun", "kyoon", "kaun", "kon", "kisko", "kise", "kisne", "kis", "kiska", "kiski", "kiske", "ye", "yeh", "wo", "woh", "voh", "apna", "apni", "apne",
+    // Postpositions & particles
+    "mein", "se", "ki", "ke", "ka", "bhi", "toh", "yaar", "yar", "naa", "ney", "ko", "pe",
+    // Verbs
+    "hai", "hain", "hoon", "hu", "tha", "thi", "raha", "rahi", "rahe", "rha", "rhi", "rhe", "karna", "karni", "karne", "karo", "kariye", "krna", "krne", "kro", "kraye", "gaya", "gayi", "gaye", "gya", "gyi", "gye", "hua", "hui", "hue", "bata", "batao", "bataye", "batayein", "batain", "bol", "bolo", "boliye", "suno", "sunna", "sunao", "dekh", "dekho", "dekhiye", "dikhao", "dikhayein", "dikhaye", "dikha", "chahiye", "cahiye", "chaheiye", "chahiy", "milna", "milne", "miliye", "aana", "aao", "aaye", "aayein", "aata", "aati", "aate", "jaana", "jao", "jaye", "jayein", "jata", "jati", "jate", "dijiye", "lijiye", "lagta", "lagti", "lagte", "hoga", "hogi", "hoge",
+    // Pronouns
+    "mujhe", "muje", "mujko", "mujhko", "hume", "hame", "hamara", "hamari", "hamare", "tumhara", "tumhari", "tumhare", "aapka", "aapki", "aapke", "mera", "meri", "mere", "unka", "unki", "unke", "iska", "iski", "iske", "usla", "uske", "uski",
+    // Body parts & symptoms
+    "dard", "drd", "bukhar", "bokhar", "khansi", "khasi", "sar", "pair", "aankh", "aankhein", "ankh", "ankhein", "pet", "daant", "daat", "hath", "haath", "khana", "peena", "pina", "chakar", "chakkar", "alti", "ulti", "ultee", "kamjori", "kamzori", "khujli", "jalan", "bimari", "beemari", "ilaj", "ilaaj", "dawa", "dawai", "dawaiyan", "sujhav", "salah", "takleef", "taklif",
+    // Greetings & Adjectives
+    "namaste", "namaskar", "pranam", "bhiya", "bhaiya", "didi", "sirji", "thik", "theek", "badiya", "badhiya", "achha", "accha", "acha", "achhi", "acchi", "achi", "sabse", "acche", "ache", "haal"
+  ]);
+
+  const ENGLISH_ONLY_WORDS = new Set([
+    "the", "of", "and", "to", "for", "on", "with", "at", "by", "from", "this", "that", "these", "those", "my", "your", "his", "her", "their", "our", "its", "you", "him", "them", "us", "what", "where", "when", "why", "how", "who", "which", "have", "has", "had", "any", "some", "good", "morning", "afternoon", "evening", "hello", "greetings", "dear", "should", "would", "could", "did", "does", "been", "was", "were", "are", "am", "is", "i", "we", "they", "she", "it"
+  ]);
+
+  function detectLanguage(cleanText) {
     const words = cleanText.split(/\s+/);
-    const hinglishGreetings = ["kya haal", "kaise ho", "kaise h", "kaise hain", "sab thik", "sab theek", "sab badiya", "sab badhiya", "kya chal raha", "kya chal rha"];
-    const isHinglishGreeting = hinglishGreetings.some(g => cleanText.includes(g));
-    const isHinglish = words.some(word => hinglishWords.includes(word)) || cleanText.includes("namaste") || isHinglishGreeting;
+    let hinglishScore = 0;
+    let englishScore = 0;
 
-    // Check for abusive words
-    const abusiveWords = ["fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick", "pussy", "chutiya", "harami", "kamina", "saala", "kamine", "bhosdike", "gaand", "madarchod", "behenchod", "bhenchod", "bsdk", "luda", "lauda", "loda", "chut", "pandi", "randi", "gandu"];
-    const hasAbusive = words.some(word => abusiveWords.includes(word));
-    
-    if (hasAbusive) {
-      if (isHinglish) {
-        appendMessage(
-          "bot", 
-          "Kripya shishtta banaye rakhein. Main yahan regional specialists dhoodhne me aapki madad karne ke liye hoon. Kripya apne symptoms batayein ya doctors ke baare me poochein."
-        );
+    words.forEach(word => {
+      if (UNAMBIGUOUS_HINGLISH_WORDS.has(word)) {
+        hinglishScore += 2;
+      } else if (ENGLISH_ONLY_WORDS.has(word)) {
+        englishScore += 2;
       } else {
-        appendMessage(
-          "bot", 
-          "Please maintain polite communication. I am here to help you find regional specialists. Please describe your symptoms or ask about our doctors."
-        );
-      }
-      return;
-    }
-
-    if (greetings.includes(cleanText) || isHinglishGreeting) {
-      let greetingResponse = "";
-      if (isHinglish) {
-        greetingResponse = "Namaste! Main theek hoon. Aap kaise hain? Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!";
-      } else {
-        let greetText = "Hello! ";
-        if (cleanText === "good morning") {
-          greetText = "Good morning! ";
-        } else if (cleanText === "good afternoon") {
-          greetText = "Good afternoon! ";
-        } else if (cleanText === "good evening") {
-          greetText = "Good evening! ";
+        if (word === "h" || word === "he") {
+          hinglishScore += 1;
+        } else if (word === "ho") {
+          hinglishScore += 1;
         }
-        greetingResponse = greetText + "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!";
-      }
-      
-      appendMessage("bot", greetingResponse);
-      return;
-    }
-    
-    const keywordMap = {
-      eye: ["eye", "eyes", "vision", "cataract", "blind", "blurry", "glasses", "sight", "glaucoma", "redness", "conjunctivitis"],
-      pediatric: ["child", "baby", "newborn", "kid", "kids", "infant", "pediatric", "teething", "vaccination", "picu", "crying"],
-      gyne: ["pregnant", "pregnancy", "delivery", "period", "periods", "gynecologist", "gynaecologist", "ivf", "fertility", "uterus", "ovary", "menstruation"],
-      dental: ["tooth", "teeth", "dentist", "braces", "dental", "aligners", "gums", "cavity", "toothache", "mouth", "dental implant"],
-      patho: ["blood test", "lab report", "biochemistry", "pathology", "hormone", "thyroid test", "tumor", "diagnostic"],
-      neuro: ["brain", "spine", "neuro", "nerve", "neurologist", "neurosurgeon", "disc", "back pain", "paralysis", "stroke", "migraine", "headache", "seizure"],
-      ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho"],
-      derma: ["skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss"],
-      chest: ["cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis"],
-      medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection"],
-      surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast surgery"]
-    };
-
-    let matchedCategory = null;
-    let maxMatches = 0;
-    
-    Object.keys(keywordMap).forEach(category => {
-      let matches = 0;
-      keywordMap[category].forEach(keyword => {
-        if (normalized.includes(keyword)) {
-          matches++;
-        }
-      });
-      if (matches > maxMatches) {
-        maxMatches = matches;
-        matchedCategory = category;
       }
     });
 
-    if (matchedCategory && maxMatches > 0) {
-      const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
-      if (matchedDocs.length > 0) {
-        const docIds = matchedDocs.map(d => d.id);
-        const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
-        
-        let responseText = "";
-        if (isHinglish) {
-          responseText = `Aapke symptoms ke hisab se, main aapko ${specLabel} ke specialist se consult karne ki salah doonga. Hamari list ke sahi doctors ye hain:`;
-        } else {
-          responseText = `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`;
-        }
-        
-        appendMessage("bot", responseText, null, docIds);
-        return;
-      }
+    const hinglishGreetings = ["kya haal", "kyaa haal", "kaise ho", "kaise h", "kaise hain", "sab thik", "sab theek", "sab badiya", "sab badhiya", "kya chal raha", "kya chal rha"];
+    if (hinglishGreetings.some(g => cleanText.includes(g))) {
+      hinglishScore += 3;
     }
 
-    // Do not suggest any doctor by default if no symptoms matched
-    let noMatchText = "";
-    if (isHinglish) {
-      noMatchText = "Mujhe aapke message mein koi specific symptoms nahi mile. Kripya apne symptoms batayein (jaise khansi, bukhar, ghutne me dard, aankh ki samasya) ya medical report upload karein taaki main sahi doctor ka sujhav de sakoon.";
+    if (hinglishScore > englishScore) {
+      return "hinglish";
+    } else if (englishScore > hinglishScore) {
+      return "english";
     } else {
-      noMatchText = "I couldn't identify any specific medical symptoms in your message. Please describe your symptoms (e.g., cough, fever, joint pain, eye issue) or upload a medical report so I can suggest the right doctor.";
+      return State.chatLanguage || "english";
     }
-    
-    appendMessage("bot", noMatchText);
+  }
+
+  async function callOpenAI(messages, fallbackFn) {
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          response_format: { type: "json_object" },
+          messages: messages,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("OpenAI API returned error status: " + response.status);
+      }
+
+      const data = await response.json();
+      const result = JSON.parse(data.choices[0].message.content.trim());
+      return result;
+    } catch (err) {
+      console.error("OpenAI API call failed, using offline fallback:", err);
+      return fallbackFn();
+    }
+  }
+
+  async function analyzeSymptomsAndRespond(userText) {
+    const normalized = userText.toLowerCase().trim();
+    const greetings = ["hi", "hello", "hey", "hola", "greetings", "namaste", "good morning", "good afternoon", "good evening", "sup", "wassup"];
+    const cleanText = normalized.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
+
+    // Update chat language dynamically based on user input
+    State.chatLanguage = detectLanguage(cleanText);
+    const isHinglish = (State.chatLanguage === "hinglish");
+    const words = cleanText.split(/\s+/);
+    const hinglishGreetings = ["kya haal", "kyaa haal", "kaise ho", "kaise h", "kaise hain", "sab thik", "sab theek", "sab badiya", "sab badhiya", "kya chal raha", "kya chal rha"];
+    const isHinglishGreeting = hinglishGreetings.some(g => cleanText.includes(g));
+
+    // Show thinking loader
+    const typingMsg = isHinglish ? "Bot soch raha hai..." : "Bot is thinking...";
+    appendMessage("bot", typingMsg);
+
+    // Prepare system prompt and history
+    const doctorsBrief = DOCTORS.map(d => ({
+      id: d.id,
+      name: d.name,
+      degrees: d.degrees,
+      specialty: d.specialty,
+      hospital: d.hospital,
+      bio: d.bio,
+      location: d.location,
+      fees: d.fees
+    }));
+
+    const systemPrompt = `You are a helpful medical assistant chatbot for the MagnumKare network in Shahjahanpur city, Uttar Pradesh, India.
+Your goal is to guide users to the right regional doctors in Shahjahanpur.
+
+Here is the database of available doctors in the MagnumKare network:
+${JSON.stringify(doctorsBrief, null, 2)}
+
+Instructions:
+1. Identify the language style the user wants to communicate in (English, Hinglish/Romanized Hindi/WhatsApp language, Devanagari Hindi, or mixed).
+2. You MUST respond in the EXACT same language style and tone. If the user writes in Hinglish (e.g., "kyaa haal h", "mujhe bukhar hai", "doctor dikhao"), reply in Hinglish. If they write in Devanagari Hindi (e.g., "नमस्ते, मुझे बुखार है"), reply in Hindi. If they write in English, reply in English. Be extremely natural like a real human conversing over WhatsApp!
+3. If the user is greeting you (e.g. "hi", "hello", "kyaa haal h", "नमस्ते") or making small talk, reply politely in their style, introduce yourself as the MagnumKare assistant, and ask them to share their symptoms or ask about our doctors. DO NOT recommend any doctors for greetings or simple small talk. Keep "recommended_doctor_ids" empty.
+4. If the user shares symptoms (even if it's mixed English, Hindi, and Hinglish terms) or asks for doctor recommendations, analyze the symptoms, match them to the most relevant specialty, and suggest the appropriate doctor(s) from the database. Acknowledge and summarize their symptoms in their language style. Put the matched doctor IDs in the "recommended_doctor_ids" array.
+5. If the user asks about a specific doctor (e.g. "dr akash", "dr ankitaverma"), provide their details in the user's style, and put their ID in "recommended_doctor_ids".
+6. Map Devanagari Hindi, Hinglish, and English medical complaints of patients to the correct specialties:
+   - Children: "mera baccha", "mere bacche ko", "बच्चा", "बच्चे", "beta/beti ko bukhar/cough" -> Pediatrics (Dr. Gaurav Mishra, Dr. S.K. Jain)
+   - Stomach issues: "pet dard", "pet me dard", "stomach pain", "पेट दर्द", "गैस", "digestive/gas problem" -> General Medicine (Dr. Rishabh Nayak, Dr. Shailendra Kishore Verma)
+   - Dengue, fever: "dengue", "dengu", "dengue fever", "डेंगू", "बुखार", "bukhar/cold/weakness" -> General Medicine (Dr. Rishabh Nayak, Dr. Shailendra Kishore Verma)
+   - Senior Citizen Care / Geriatrics: "geriatric", "senior citizen", "old age", "bujurg", "budhape", "elderly" -> General Medicine (Dr. Shailendra Kishore Verma)
+   - Joint/Bone/Injuries: "perr m chot", "pair me chot", "haddi tootna", "ghutne me dard", "जोड़ों का दर्द", "हड्डी टूटना", "कमार दर्द", "kamar dard" -> Orthopedics (Dr. Pradeep Yadav)
+   - Surgery/Stones/Piles: "operation", "pathri", "bawasir", "hernia", "ऑपरेशन", "पित्त की पथरी", "बवासीर" -> General Surgery (Dr. Akash)
+   - Eye issues: "aankh ki samasya", "aankh me dard", "dhundhla dikhna", "motiyabind", "आँख", "मोतियाबिंद", "धुंधला" -> Eye Specialist (Dr. Manmohan Lal Gupta)
+   - Skin problems: "khujli", "daane", "skin doctor", "allargy", "त्वचा", "खुजली", "चकत्ते" -> Dermatologist (Dr. Usha Chandra)
+   - Gynecology/Lady issues: "pregnancy", "periods miss", "lady doctor", "delivery", "गर्भवती", "पीरियड", "डिलिवरी" -> Gynaecologists (Dr. Amita Jain, Dr. Megha Gupta, Dr. Indu Yadav)
+   - Dental: "daant me dard", "keeda lagna", "दांत दर्द", "मसूड़े" -> Dentist (Dr. Puneet Jain)
+   - Pulmonology/Chest: "cough", "asthma", "saans me takleef", "dama", "फेफड़े", "खांसी", "दमा" -> Pulmonologist / Chest Specialist (Dr. Ankita Verma, Dr. Shubham Jain)
+   - ICU/Anaesthesia: "icu", "anesthesia", "behoshi", "sunn karna", "बेहोशी", "आईसीयू" -> Anaesthesiology & ICU Specialist (Dr. Saurabh Mishra)
+7. If the user uses abusive or inappropriate language, respond with a polite bilingual warning to maintain polite clinical decorum. Do not recommend any doctors.
+8. You MUST return your response ONLY as a JSON object with the following fields:
+{
+  "reply": "your text response here",
+  "recommended_doctor_ids": ["doc-id1", "doc-id2"]
+}
+Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched doctors from the database above (e.g. "doc-akash", "doc-rishabh", etc.).`;
+
+    const history = State.chatHistory.filter(msg => msg.text !== typingMsg);
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history.slice(-8).map(msg => ({
+        role: msg.sender === "user" ? "user" : "assistant",
+        content: msg.text
+      }))
+    ];
+
+    const offlineFallback = () => {
+      // Check for abusive words
+      const abusiveWords = ["fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick", "pussy", "chutiya", "harami", "kamina", "saala", "kamine", "bhosdike", "gaand", "madarchod", "behenchod", "bhenchod", "bsdk", "luda", "lauda", "loda", "chut", "pandi", "randi", "gandu"];
+      const hasAbusive = words.some(word => abusiveWords.includes(word));
+
+      if (hasAbusive) {
+        return {
+          reply: isHinglish
+            ? "Kripya shishtta banaye rakhein. Main yahan regional specialists dhoodhne me aapki madad karne ke liye hoon. Kripya apne symptoms batayein ya doctors ke baare me poochein."
+            : "Please maintain polite communication. I am here to help you find regional specialists. Please describe your symptoms or ask about our doctors.",
+          recommended_doctor_ids: []
+        };
+      }
+
+      if (greetings.includes(cleanText) || isHinglishGreeting) {
+        let greetText = isHinglish ? "Namaste! " : "Hello! ";
+        if (cleanText === "good morning") {
+          greetText = isHinglish ? "Namaste! Shubh prabhat. " : "Good morning! ";
+        } else if (cleanText === "good afternoon") {
+          greetText = isHinglish ? "Namaste! " : "Good afternoon! ";
+        } else if (cleanText === "good evening") {
+          greetText = isHinglish ? "Namaste! Shubh sandhya. " : "Good evening! ";
+        }
+        return {
+          reply: greetText + (isHinglish
+            ? "Aap kaise hain? Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!"
+            : "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!"),
+          recommended_doctor_ids: []
+        };
+      }
+
+      const keywordMap = {
+        eye: ["eye", "eyes", "vision", "cataract", "blind", "blurry", "glasses", "sight", "glaucoma", "redness", "conjunctivitis", "aankh", "ankh", "aankhon", "aankhe", "dhundhla", "motiyabind", "paani aana", "jalan", "आँख", "आँखे", "आँखों", "दृष्टि", "मोतियाबिंद", "धुंधला", "चश्मा"],
+        pediatric: ["child", "baby", "newborn", "kid", "kids", "infant", "pediatric", "teething", "vaccination", "picu", "crying", "baccha", "bacche", "bacha", "bache", "beta", "beti", "bache ko", "bacche ko", "बच्चा", "बच्चे", "बच्चों", "शिशु", "बेटा", "बेटी", "टीकाकरण"],
+        gyne: ["pregnant", "pregnancy", "delivery", "period", "periods", "gynecologist", "gynaecologist", "ivf", "fertility", "uterus", "ovary", "menstruation", "mahila doctor", "lady doctor", "bachadani", "garbhavastha", "गर्भवती", "गर्भावस्था", "डिलिवरी", "मासिक धर्म", "पीरियड", "बांझपन", "गर्भाशय"],
+        dental: ["tooth", "teeth", "dentist", "braces", "dental", "aligners", "gums", "cavity", "toothache", "mouth", "dental implant", "daant", "daat", "dant", "masuda", "masude", "keeda", "दाँत", "दांत", "मसूड़े", "मसूड़ा", "दांत दर्द", "तार बांधना"],
+        patho: ["blood test", "lab report", "biochemistry", "pathology", "hormone", "thyroid test", "tumor", "diagnostic", "blood check", "lab test", "report check", "रक्त जांच", "खून टेस्ट", "लैब रिपोर्ट", "हार्मोन", "थायराइड", "पेशाब जांच"],
+        neuro: ["brain", "spine", "neuro", "nerve", "neurologist", "neurosurgeon", "disc", "back pain", "paralysis", "stroke", "migraine", "headache", "seizure", "dimag", "nas", "nass", "lakwa", "lakva", "daura", "sir dard", "sar dard", "दिमाग", "मस्तिष्क", "नस", "लकवा", "दौरा", "मिर्गी", "सिरदर्द"],
+        ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho", "haddi", "haddiyan", "jod", "ghutna", "kamar dard", "peeth dard", "chot", "perr m dard", "pair m dard", "हड्डी", "हड्डियां", "जोड़", "जोड़ों का दर्द", "घुटने", "गठिया", "मोच", "टूटना"],
+        derma: ["skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss", "chamdi", "daane", "pimpal", "khujli", "chakte", "allargy", "त्वca", "त्वचा", "चमड़ी", "मुहासे", "खुजली", "चकत्ते", "बाल झड़ना", "एलर्जी"],
+        chest: ["cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis", "khansi", "dama", "saans", "seene me dard", "chhati me dard", "खांसी", "दमा", "अस्थमा", "फेफड़े", "सांस फूलना", "टीबी", "निमोनिया", "सीना", "छाती"],
+        medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection", "bukhar", "bokhar", "sardi jukam", "sugar", "kamjori", "dengue", "dengu", "pet dard", "pet me dard", "बुखार", "सर्दी", "जुकाम", "मधुमेह", "शुगर", "बीपी", "कमजोरी", "डेंगू", "मलेरिया", "टायफाइड", "पेट दर्द", "geriatric", "geriatrics", "senior citizen", "old age", "bujurg", "budhape", "elderly"],
+        surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast surgery", "operation", "pathri", "bawasir", "cheera", "cut", "ऑपरेशन", "सर्जरी", "पित्त की पथरी", "हर्निया", "अपेंडिक्स", "बवासीर"],
+        ent: ["anesthesia", "anaesthetic", "sedation", "ventilator", "icu", "critical care", "intensive care", "unconscious", "pain block", "numbness", "behoshi", "behosh", "sunn karna", "sun", "बेहोशी", "बेहोश", "सुन्न करना", "आईसीयू", "वेंटीलेटर"]
+      };
+
+      let matchedCategory = null;
+      let maxMatches = 0;
+
+      Object.keys(keywordMap).forEach(category => {
+        let matches = 0;
+        keywordMap[category].forEach(keyword => {
+          if (normalized.includes(keyword)) {
+            matches++;
+          }
+        });
+        if (matches > maxMatches) {
+          maxMatches = matches;
+          matchedCategory = category;
+        }
+      });
+
+      if (matchedCategory && maxMatches > 0) {
+        const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
+        if (matchedDocs.length > 0) {
+          const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
+          return {
+            reply: isHinglish
+              ? `Aapke symptoms ke hisab se, main aapko ${specLabel} ke specialist se consult karne ki salah doonga. Hamari list ke sahi doctors ye hain:`
+              : `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`,
+            recommended_doctor_ids: matchedDocs.map(d => d.id)
+          };
+        }
+      }
+
+      return {
+        reply: isHinglish
+          ? "Mujhe aapke message mein koi specific symptoms nahi mile. Kripya apne symptoms batayein (jaise khansi, bukhar, ghutne me dard, aankh ki samasya) ya medical report upload karein taaki main sahi doctor ka sujhav de sakoon."
+          : "I couldn't identify any specific medical symptoms in your message. Please describe your symptoms (e.g., cough, fever, joint pain, eye issue) or upload a medical report so I can suggest the right doctor.",
+        recommended_doctor_ids: []
+      };
+    };
+
+    const result = await callOpenAI(messages, offlineFallback);
+
+    // Remove typing loader
+    State.chatHistory = State.chatHistory.filter(msg => msg.text !== typingMsg);
+    localStorage.setItem("magnum_chat_history", JSON.stringify(State.chatHistory));
+    renderChatHistory();
+
+    appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
   }
 
   // Register Chatbot Listeners
@@ -1655,7 +1811,7 @@ document.addEventListener("DOMContentLoaded", () => {
       openChatbot();
     }
   });
-  
+
   DOM.chatbotCloseBtn.addEventListener("click", closeChatbot);
   DOM.chatbotSendBtn.addEventListener("click", handleSendMessage);
   DOM.chatbotTextInput.addEventListener("keypress", (e) => {
@@ -1667,71 +1823,108 @@ document.addEventListener("DOMContentLoaded", () => {
   DOM.chatbotAttachBtn.addEventListener("click", () => {
     DOM.chatbotFileInput.click();
   });
-  
-  function analyzeReportAndRespond(fileName) {
+
+  async function analyzeReportAndRespond(fileName) {
     const normalized = fileName.toLowerCase();
-    
-    const reportKeywords = {
-      eye: ["eye", "optom", "vision", "cataract", "glaucoma", "sight", "retina", "blind", "ophthal"],
-      pediatric: ["child", "baby", "pediatric", "neonat", "kid", "infant", "childhood"],
-      gyne: ["preg", "delivery", "period", "gyne", "gynaec", "ivf", "fertility", "uterus", "ovary", "usg", "obstet"],
-      dental: ["dent", "tooth", "teeth", "braces", "aligner", "orthodont", "cavity", "opg"],
-      patho: ["blood", "cbc", "biochem", "patho", "thyroid", "lipid", "urine", "hba1c", "serum", "cholesterol", "liver"],
-      neuro: ["brain", "neuro", "spine", "mri", "eeg", "stroke", "migraine", "headache"],
-      ortho: ["joint", "bone", "fracture", "ortho", "knee", "hip", "ligament", "sprain", "xray", "x-ray"],
-      derma: ["skin", "acne", "pimple", "derma", "hair", "scalp", "allergy", "melasma", "eczema"],
-      chest: ["chest", "lung", "cough", "asthma", "pulmono", "tb", "copd", "pneumonia", "sputum", "respiratory", "bronch"],
-      surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast"]
+    const isHinglish = (State.chatLanguage === "hinglish");
+
+    const doctorsBrief = DOCTORS.map(d => ({
+      id: d.id,
+      name: d.name,
+      degrees: d.degrees,
+      specialty: d.specialty,
+      hospital: d.hospital,
+      bio: d.bio,
+      location: d.location,
+      fees: d.fees
+    }));
+
+    const systemPrompt = `You are a helpful medical assistant chatbot for the MagnumKare network in Shahjahanpur city, Uttar Pradesh, India.
+Your goal is to analyze the file name of a medical report uploaded by the user, detect the likely department or specialty, and recommend appropriate doctors from the network.
+
+Here is the database of available doctors in the MagnumKare network:
+${JSON.stringify(doctorsBrief, null, 2)}
+
+Instructions:
+1. Respond in the user's preferred language style (Hinglish/mixed if preferredLanguage is hinglish, otherwise English).
+2. The current preferred language is: ${State.chatLanguage}.
+3. Based on the file name of the report, identify the specialty/department, choose suitable doctors from the database, explain what the report likely concerns, and list the doctor IDs in the "recommended_doctor_ids" array.
+4. If the report type is completely unclassifiable, recommend a General Medicine specialist (General Medicine specialty) for review.
+5. You MUST return your response ONLY as a JSON object with the following fields:
+{
+  "reply": "your report analysis summary response here",
+  "recommended_doctor_ids": ["doc-id1", "doc-id2"]
+}
+Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched doctors from the database above.`;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `I have uploaded a report named: ${fileName}` }
+    ];
+
+    const offlineFallback = () => {
+      const reportKeywords = {
+        eye: ["eye", "optom", "vision", "cataract", "glaucoma", "sight", "retina", "blind", "ophthal"],
+        pediatric: ["child", "baby", "pediatric", "neonat", "kid", "infant", "childhood"],
+        gyne: ["preg", "delivery", "period", "gyne", "gynaec", "ivf", "fertility", "uterus", "ovary", "usg", "obstet"],
+        dental: ["dent", "tooth", "teeth", "braces", "aligner", "orthodont", "cavity", "opg"],
+        patho: ["blood", "cbc", "biochem", "patho", "thyroid", "lipid", "urine", "hba1c", "serum", "cholesterol", "liver"],
+        neuro: ["brain", "neuro", "spine", "mri", "eeg", "stroke", "migraine", "headache"],
+        ortho: ["joint", "bone", "fracture", "ortho", "knee", "hip", "ligament", "sprain", "xray", "x-ray"],
+        derma: ["skin", "acne", "pimple", "derma", "hair", "scalp", "allergy", "melasma", "eczema"],
+        chest: ["chest", "lung", "cough", "asthma", "pulmono", "tb", "copd", "pneumonia", "sputum", "respiratory", "bronch"],
+        surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast"]
+      };
+
+      let matchedCategory = null;
+
+      Object.keys(reportKeywords).forEach(category => {
+        reportKeywords[category].forEach(keyword => {
+          if (normalized.includes(keyword)) {
+            matchedCategory = category;
+          }
+        });
+      });
+
+      if (matchedCategory) {
+        const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
+        if (matchedDocs.length > 0) {
+          const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
+          return {
+            reply: isHinglish
+              ? `Report Analysis Complete: Is document ke hisab se indicators ${specLabel} se related hain. In findings ke aadhar par, main niche diye gaye doctor(s) se consult karne ki salah doonga:`
+              : `Report Analysis Complete: The document suggests indicators related to ${specLabel}. Based on these findings, I suggest consulting the following doctor(s):`,
+            recommended_doctor_ids: matchedDocs.map(d => d.id)
+          };
+        }
+      }
+
+      const medicineDocs = DOCTORS.filter(d => d.specialty === "medicine");
+      return {
+        reply: isHinglish
+          ? `Report Analysis Complete: Hum is report ke file name se iski specific category nahi pehchan paye. General medical sawalo ke liye, main General Medicine specialist se consult karne ki salah doonga:`
+          : `Report Analysis Complete: We couldn't classify this report's specific department from the file name. For general medical queries and reviews, I suggest consulting a General Medicine specialist:`,
+        recommended_doctor_ids: medicineDocs.map(d => d.id)
+      };
     };
 
-    let matchedCategory = null;
-    
-    Object.keys(reportKeywords).forEach(category => {
-      reportKeywords[category].forEach(keyword => {
-        if (normalized.includes(keyword)) {
-          matchedCategory = category;
-        }
-      });
-    });
-
-    if (matchedCategory) {
-      const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
-      if (matchedDocs.length > 0) {
-        const docIds = matchedDocs.map(d => d.id);
-        const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
-        appendMessage(
-          "bot", 
-          `Report Analysis Complete: The document suggests indicators related to ${specLabel}. Based on these findings, I suggest consulting the following doctor(s):`, 
-          null, 
-          docIds
-        );
-        return;
-      }
-    }
-
-    const medicineDocs = DOCTORS.filter(d => d.specialty === "medicine");
-    const docIds = medicineDocs.map(d => d.id);
-    appendMessage(
-      "bot", 
-      `Report Analysis Complete: We couldn't classify this report's specific department from the file name. For general medical queries and reviews, I suggest consulting a General Medicine specialist:`, 
-      null, 
-      docIds
-    );
+    const result = await callOpenAI(messages, offlineFallback);
+    appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
   }
 
   DOM.chatbotFileInput.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     if (!file.type.startsWith("image/") && file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
       showToast("Invalid File", "Please select a valid image or PDF report.", "warning");
       return;
     }
-    
+
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
       const base64Url = evt.target.result;
-      
+
       let cachedImages = [];
       const stored = sessionStorage.getItem("magnum_session_images");
       if (stored) {
@@ -1739,16 +1932,24 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       cachedImages.push(base64Url);
       sessionStorage.setItem("magnum_session_images", JSON.stringify(cachedImages));
-      
+
       appendMessage("user", file.name, base64Url);
-      
-      appendMessage("bot", `Analyzing report (${file.name})... Please wait.`);
-      
+
+      const isHinglish = (State.chatLanguage === "hinglish");
+      const analyzingMsg = isHinglish
+        ? `Report (${file.name}) ko analyze kiya ja raha hai... Kripya thoda intezar karein.`
+        : `Analyzing report (${file.name})... Please wait.`;
+
+      appendMessage("bot", analyzingMsg);
+
       setTimeout(() => {
-        State.chatHistory = State.chatHistory.filter(msg => !msg.text.startsWith("Analyzing report"));
+        State.chatHistory = State.chatHistory.filter(msg =>
+          !msg.text.startsWith("Analyzing report") &&
+          !msg.text.includes("ko analyze kiya ja raha hai")
+        );
         localStorage.setItem("magnum_chat_history", JSON.stringify(State.chatHistory));
         renderChatHistory();
-        
+
         analyzeReportAndRespond(file.name);
       }, 2000);
     };
