@@ -16,7 +16,8 @@ const SPECIALTIES = {
   patho: "Pathology & Diagnostics",
   derma: "Dermatology (Skin Care)",
   chest: "Pulmonology & Chest Care",
-  medicine: "General Medicine / Internal Medicine"
+  medicine: "General Medicine / Internal Medicine",
+  surgery: "General & Laparoscopic Surgery"
 };
 
 // --- Real Shahjahanpur Specialists Database (Sourced from Hospital portals) ---
@@ -359,6 +360,27 @@ const DOCTORS = [
     },
     testimonials: [
       { id: "rn1", patient: "Mrs. Nisha Sharma, Shahjahanpur", text: "Dr. Rishabh Nayak diagnosed my mother's diabetes perfectly. His patient listening and accurate medical advice are highly commendable.", thumb: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop" }
+    ]
+  },
+  {
+    id: "doc-akash",
+    name: "Dr. Akash",
+    degrees: "MBBS, MS - General Surgery, DNB - General Surgery, FMAS",
+    specialty: "surgery",
+    experience: "7+ Years",
+    rating: "4.9",
+    reviewsCount: 96,
+    hospital: "Gastro Clinic 27",
+    fees: "₹400",
+    location: "Kaccha katra mod, sinzai, Near saraswati shishu mandir, Hadaf, Shahjahanpur",
+    avatar: "https://images1-fabric.practo.com/doctor/1380758/dr-akash-69201041276bf.png",
+    bio: "Dr. Akash is a highly skilled General & Laparoscopic Surgeon dedicated to providing honest, ethical, and patient-centered care in Shahjahanpur. He has over 7 years of rich clinical experience. He specializes in advanced minimally invasive laparoscopic surgeries for gallstones, hernia, appendicitis, and piles/fissure/fistula, as well as breast surgeries and OPD consultations. He focuses on precise diagnosis, transparent communication, and ensuring a fast, comfortable recovery for all patients close to their home.",
+    socials: {
+      gmb: "https://www.google.com/search?q=Gastro+Clinic+27+Hadaf+Shahjahanpur",
+      website: "https://www.practo.com/shahjahanpur/doctor/dr-akash-26-laparoscopic-surgeon"
+    },
+    testimonials: [
+      { id: "akash-t1", patient: "Aman Bajpai, Hadaf", text: "Got my laparoscopic gallstone surgery done by Dr. Akash. He explained the procedure very clearly and the recovery was extremely smooth.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
     ]
   }
 ];
@@ -1550,7 +1572,8 @@ document.addEventListener("DOMContentLoaded", () => {
       ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho"],
       derma: ["skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss"],
       chest: ["cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis"],
-      medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection"]
+      medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection"],
+      surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast surgery"]
     };
 
     let matchedCategory = null;
@@ -1627,7 +1650,8 @@ document.addEventListener("DOMContentLoaded", () => {
       neuro: ["brain", "neuro", "spine", "mri", "eeg", "stroke", "migraine", "headache"],
       ortho: ["joint", "bone", "fracture", "ortho", "knee", "hip", "ligament", "sprain", "xray", "x-ray"],
       derma: ["skin", "acne", "pimple", "derma", "hair", "scalp", "allergy", "melasma", "eczema"],
-      chest: ["chest", "lung", "cough", "asthma", "pulmono", "tb", "copd", "pneumonia", "sputum", "respiratory", "bronch"]
+      chest: ["chest", "lung", "cough", "asthma", "pulmono", "tb", "copd", "pneumonia", "sputum", "respiratory", "bronch"],
+      surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast"]
     };
 
     let matchedCategory = null;
