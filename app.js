@@ -1542,22 +1542,47 @@ document.addEventListener("DOMContentLoaded", () => {
     const greetings = ["hi", "hello", "hey", "hola", "greetings", "namaste", "good morning", "good afternoon", "good evening", "sup", "wassup"];
     const cleanText = normalized.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "").trim();
     
+    // Detect if user sent message in Hinglish
+    const hinglishWords = ["kya", "hai", "hain", "ko", "se", "ka", "ki", "ke", "me", "mein", "par", "bhi", "hi", "toh", "yaar", "muje", "mujhe", "mera", "meri", "mere", "tum", "tumhara", "tumhari", "aap", "aapka", "aapki", "aapke", "hume", "hamara", "hamari", "hamare", "kar", "karna", "karne", "raha", "rahi", "rahe", "hoga", "hogi", "hoge", "gaya", "gayi", "gaye", "hua", "hui", "hue", "tha", "thi", "the", "ho", "aaj", "kal", "parso", "ab", "kab", "tab", "sab", "ek", "do", "teen", "chaar", "paanch", "kyun", "kyu", "kaise", "kahan", "kaha", "idhar", "udhar", "andar", "bahar", "upar", "neeche", "niche", "paas", "door", "saath", "liye", "bina", "lekin", "magar", "aur", "ya", "kuch", "koi", "symptom", "problem", "dard", "bukhar", "khansi", "sar", "sir", "pair", "aankh", "aankhein", "pet", "daant", "daat", "hath", "haath", "khana", "khaya", "dikhao", "dikhana", "dikha", "chahiye", "bol", "bata", "batao", "suno", "sunna", "dekh", "dekho", "chal", "chalo", "baith", "baitho", "uth", "utho"];
+    const words = cleanText.split(/\s+/);
+    const isHinglish = words.some(word => hinglishWords.includes(word)) || cleanText.includes("namaste");
+
+    // Check for abusive words
+    const abusiveWords = ["fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick", "pussy", "chutiya", "harami", "kamina", "saala", "kamine", "bhosdike", "gaand", "madarchod", "behenchod", "bhenchod", "bsdk", "luda", "lauda", "loda", "chut", "pandi", "randi", "gandu"];
+    const hasAbusive = words.some(word => abusiveWords.includes(word));
+    
+    if (hasAbusive) {
+      if (isHinglish) {
+        appendMessage(
+          "bot", 
+          "Kripya shishtta banaye rakhein. Main yahan regional specialists dhoodhne me aapki madad karne ke liye hoon. Kripya apne symptoms batayein ya doctors ke baare me poochein."
+        );
+      } else {
+        appendMessage(
+          "bot", 
+          "Please maintain polite communication. I am here to help you find regional specialists. Please describe your symptoms or ask about our doctors."
+        );
+      }
+      return;
+    }
+
     if (greetings.includes(cleanText)) {
-      let greetingResponse = "Hello! ";
-      if (cleanText === "good morning") {
-        greetingResponse = "Good morning! ";
-      } else if (cleanText === "good afternoon") {
-        greetingResponse = "Good afternoon! ";
-      } else if (cleanText === "good evening") {
-        greetingResponse = "Good evening! ";
-      } else if (cleanText === "namaste") {
-        greetingResponse = "Namaste! ";
+      let greetingResponse = "";
+      if (isHinglish) {
+        greetingResponse = "Namaste! Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!";
+      } else {
+        let greetText = "Hello! ";
+        if (cleanText === "good morning") {
+          greetText = "Good morning! ";
+        } else if (cleanText === "good afternoon") {
+          greetText = "Good afternoon! ";
+        } else if (cleanText === "good evening") {
+          greetText = "Good evening! ";
+        }
+        greetingResponse = greetText + "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!";
       }
       
-      appendMessage(
-        "bot", 
-        greetingResponse + "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!"
-      );
+      appendMessage("bot", greetingResponse);
       return;
     }
     
@@ -1596,24 +1621,28 @@ document.addEventListener("DOMContentLoaded", () => {
       if (matchedDocs.length > 0) {
         const docIds = matchedDocs.map(d => d.id);
         const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
-        appendMessage(
-          "bot", 
-          `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`, 
-          null, 
-          docIds
-        );
+        
+        let responseText = "";
+        if (isHinglish) {
+          responseText = `Aapke symptoms ke hisab se, main aapko ${specLabel} ke specialist se consult karne ki salah doonga. Hamari list ke sahi doctors ye hain:`;
+        } else {
+          responseText = `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`;
+        }
+        
+        appendMessage("bot", responseText, null, docIds);
         return;
       }
     }
 
-    const medicineDocs = DOCTORS.filter(d => d.specialty === "medicine");
-    const docIds = medicineDocs.map(d => d.id);
-    appendMessage(
-      "bot", 
-      "I couldn't identify a specific specialty for those symptoms. For general concerns (fever, cold, blood pressure, fatigue), please check our General Medicine specialist:", 
-      null, 
-      docIds
-    );
+    // Do not suggest any doctor by default if no symptoms matched
+    let noMatchText = "";
+    if (isHinglish) {
+      noMatchText = "Mujhe aapke message mein koi specific symptoms nahi mile. Kripya apne symptoms batayein (jaise khansi, bukhar, ghutne me dard, aankh ki samasya) ya medical report upload karein taaki main sahi doctor ka sujhav de sakoon.";
+    } else {
+      noMatchText = "I couldn't identify any specific medical symptoms in your message. Please describe your symptoms (e.g., cough, fever, joint pain, eye issue) or upload a medical report so I can suggest the right doctor.";
+    }
+    
+    appendMessage("bot", noMatchText);
   }
 
   // Register Chatbot Listeners
