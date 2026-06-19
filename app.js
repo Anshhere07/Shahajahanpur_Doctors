@@ -184,7 +184,7 @@ const DOCTORS = [
   {
     id: "doc-puneetjain",
     name: "Dr. Puneet Jain",
-    degrees: "MBBS, MDS - Consultant Orthodontist",
+    degrees: "BDS, MDS - Consultant Orthodontist",
     specialty: "dental",
     experience: "12+ Years",
     rating: "4.8",
@@ -966,6 +966,8 @@ function handleBookingSubmit(e) {
   const symptoms = formData.get("patient-symptoms");
   const bDate = formData.get("booking-date");
   const bTime = formData.get("booking-time");
+  const referredBy = formData.get("referred-by");
+  const referredByPhone = formData.get("referred-by-phone");
 
   const newBooking = {
     id: bookingId,
@@ -981,6 +983,8 @@ function handleBookingSubmit(e) {
     symptoms: symptoms,
     date: bDate,
     time: bTime,
+    referredBy: referredBy,
+    referredByPhone: referredByPhone,
     reportName: State.uploadedFileName,
     status: "confirmed",
     timestamp: new Date().toISOString()
@@ -1016,6 +1020,9 @@ function handleBookingSubmit(e) {
 *Age & Gender:* ${age} Yrs, ${gender}
 *Contact Phone:* ${phone}
 *Symptoms:* ${symptoms}
+
+*Referred By:* ${referredBy}
+*Referrer Phone:* ${referredByPhone}
 
 *Specialist Doctor:* ${doc.name}
 *Clinic/Hospital:* ${doc.hospital}
@@ -1190,6 +1197,14 @@ function renderConfirmationCard(booking) {
         <span class="conf-lbl">Referral Consultation Fee</span>
         <span class="conf-val">${booking.doctorFees}</span>
       </div>
+      <div class="conf-row">
+        <span class="conf-lbl">Referred By</span>
+        <span class="conf-val">${booking.referredBy || 'N/A'}</span>
+      </div>
+      <div class="conf-row">
+        <span class="conf-lbl">Referrer Phone</span>
+        <span class="conf-val">${booking.referredByPhone || 'N/A'}</span>
+      </div>
       
       ${isConfirmed ? `
         <div class="conf-row" style="flex-direction: column; align-items: flex-start; gap: 8px; border-bottom: none; padding-bottom: 0;">
@@ -1225,7 +1240,7 @@ function renderConfirmationCard(booking) {
 
       <!-- WhatsApp and Call Support Actions directly containing Referral Details -->
       <div class="conf-support-row">
-        <a href="https://wa.me/919336300420?text=Hello%20MagnumKare%20Helpdesk,%20here%20are%20the%20details%20for%20Patient%20Referral%20ID%20${booking.id}.%20Patient:%20${encodeURIComponent(booking.patientName)}%20(${booking.age}%20yrs),%20referred%20to%20Dr.%20${encodeURIComponent(booking.doctorName)}%20for%20${booking.date}%20at%20${booking.time}.%20Status:%20${booking.status.toUpperCase()}." target="_blank" class="btn-whatsapp" title="WhatsApp Referral Details to MagnumKare">
+        <a href="https://wa.me/919336300420?text=Hello%20MagnumKare%20Helpdesk,%20here%20are%20the%20details%20for%20Patient%20Referral%20ID%20${booking.id}.%20Patient:%20${encodeURIComponent(booking.patientName)}%20(${booking.age}%20yrs),%20referred%20by%20${encodeURIComponent(booking.referredBy || 'N/A')}%20(Phone:%20${encodeURIComponent(booking.referredByPhone || 'N/A')}),%20referred%20to%20Dr.%20${encodeURIComponent(booking.doctorName)}%20for%20${booking.date}%20at%20${booking.time}.%20Status:%20${booking.status.toUpperCase()}." target="_blank" class="btn-whatsapp" title="WhatsApp Referral Details to MagnumKare">
           <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
           <span>WhatsApp Details</span>
         </a>
