@@ -393,7 +393,7 @@ const DOCTORS = [
     hospital: "OMAX Hospital / Civil Lines Clinic",
     fees: "₹400",
     location: "Medical Clinic, Civil Lines, Shahjahanpur",
-    avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?q=80&w=200&auto=format&fit=crop",
+    avatar: "assets/images/shailendra_verma.jpg",
     bio: "Dr. Shailendra Kishore Verma is a highly distinguished Senior Consultant in General Medicine and Geriatrics (Senior Citizen Care) with over 15 years of clinical experience. An alumnus of AIIMS New Delhi, he served as a resident at AIIMS Delhi, worked as COVID Care Lead at JP Hospital Noida, and was former clinical expert in Rohilkhand Hospital's ENT department. He specializes in geriatric health management, diabetes, cardiology, hypertension control, and emergency care with admission facility at OMAX Hospital.",
     socials: {
       gmb: "https://www.google.com/maps/search/Dr+Shailendra+Kishore+Verma+Civil+Lines+Shahjahanpur",

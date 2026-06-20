@@ -411,6 +411,17 @@ body {
   }
 }
 
+.hero-subtitle {
+  font-family: var(--font-body);
+  color: var(--text-body);
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  margin: 16px auto 0 auto;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
 /* Elegant Search bar */
 .search-wrapper {
   position: relative;
