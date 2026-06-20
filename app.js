@@ -385,18 +385,20 @@ const DOCTORS = [
   {
     id: "doc-shailendra",
     name: "Dr. Shailendra Kishore Verma",
-    degrees: "MBBS, MD - General Medicine (AIIMS, New Delhi)",
+    degrees: "MBBS, MD",
     specialty: "medicine",
-    experience: "15+ Years",
+    experience: "10+ Years",
     rating: "4.9",
     reviewsCount: 188,
-    hospital: "OMAX Hospital / Civil Lines Clinic",
-    fees: "₹400",
-    location: "Medical Clinic, Civil Lines, Shahjahanpur",
+    hospital: "Senior Care Clinic",
+    fees: "₹300",
+    location: "Super Market, Star Marriage Lawn, Behind Kanojia Hospital, Shahjahanpur",
     avatar: "assets/images/shailendra_verma.jpg",
-    bio: "Dr. Shailendra Kishore Verma is a highly distinguished Senior Consultant in General Medicine and Geriatrics (Senior Citizen Care) with over 15 years of clinical experience. An alumnus of AIIMS New Delhi, he served as a resident at AIIMS Delhi, worked as COVID Care Lead at JP Hospital Noida, and was former clinical expert in Rohilkhand Hospital's ENT department. He specializes in geriatric health management, diabetes, cardiology, hypertension control, and emergency care with admission facility at OMAX Hospital.",
+    bio: "Dr. Shailendra Kishore Verma is an AIIMS New Delhi–trained expert physician dealing with medical diseases across all age patients. Experienced in Ward, HDU, and ICU patient care, including critical care and COVID-19 management. Special interest in geriatric medicine, multimorbidity, frailty, and polypharmacy. Committed to evidence-based, ethical, and patient-centred healthcare.",
     socials: {
-      gmb: "https://www.google.com/maps/search/Dr+Shailendra+Kishore+Verma+Civil+Lines+Shahjahanpur",
+      instagram: "https://www.instagram.com/dr_shailen_md/",
+      facebook: "https://www.facebook.com/profile.php?id=61591242321982",
+      gmb: "https://www.google.com/maps/search/Dr+Shailendra+Kishore+Verma+Senior+Care+Clinic+Shahjahanpur",
       website: "https://skv625.com/"
     },
     testimonials: [
