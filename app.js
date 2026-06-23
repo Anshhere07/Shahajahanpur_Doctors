@@ -409,24 +409,24 @@ const DOCTORS = [
   {
     id: "doc-tanmay",
     name: "Dr. Tanmay Agrawal",
-    degrees: "MBBS",
-    specialty: "medicine",
-    experience: "6 Years",
-    rating: "4.8",
-    reviewsCount: 65,
-    hospital: "Alok Clinic",
-    fees: "₹300",
-    location: "Kaccha Katra mod, Shahjahanpur",
+    degrees: "MBBS, MD, DM (Cardiology) - Senior Cardiologist",
+    specialty: "cardio",
+    experience: "10+ Years",
+    rating: "4.9",
+    reviewsCount: 125,
+    hospital: "Clara Swain Mission Hospital",
+    fees: "₹500",
+    location: "Civil Lines, Bareilly, Uttar Pradesh",
     avatar: "assets/images/tanmay_agrawal.png",
-    bio: "Dr. Tanmay Agrawal is a dedicated General Physician with 6 years of experience in the field. He completed his MBBS from Rajiv Gandhi University of Health Sciences, Karnataka in 2016 and is registered with the Gujarat Medical Council. He specializes in managing chronic conditions, viral fevers, seasonal infections, and primary health concerns with a patient-centric approach.",
+    bio: "Dr. Tanmay Agrawal is a highly distinguished Senior Interventional Cardiologist at Clara Swain Mission Hospital, Bareilly. He completed his MBBS, MD in General Medicine (SRMS Bareilly), and DM in Cardiology from the prestigious U.N. Mehta Institute of Cardiology and Research Centre, Ahmedabad. With over a decade of clinical experience, Dr. Agrawal has served at renowned institutions including Rajiv Gandhi Super Specialty Hospital, Delhi. He is widely recognized for performing Bareilly's first revolutionary leadless pacemaker implantation (Medtronic Micra VR Two), completed in a record 25 minutes without any incision or wires. He specializes in complex angioplasties, coronary stenting, pacemaker implantations, and comprehensive heart failure management.",
     socials: {
       instagram: "https://www.instagram.com/",
       facebook: "https://www.facebook.com/",
-      gmb: "https://www.google.com/maps/search/Dr+Tanmay+Agrawal+Shahjahanpur",
-      website: "https://www.practo.com/shahjahanpur/doctor/tanmay-agrawal-s-o-sri-alok-agrawal-general-physician"
+      gmb: "https://www.google.com/maps/search/Clara+Swain+Mission+Hospital+Bareilly",
+      website: "https://share.google/jwdKX27gUbC4kG6aY"
     },
     testimonials: [
-      { id: "tanmay-t1", patient: "Sanjay Gupta, Shahjahanpur", text: "Dr. Tanmay is highly compassionate and listens carefully to all complaints. Excellent treatment for viral fevers.", thumb: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?q=80&w=200&auto=format&fit=crop" }
+      { id: "tanmay-t1", patient: "Raman Pratap, Bareilly", text: "Dr. Tanmay Agrawal performed angioplasty on my mother at Clara Swain Mission Hospital. He is a savior! Incredibly skilled cardiologist.", thumb: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop" }
     ]
   },
   {
@@ -510,7 +510,15 @@ const DOM = {
   chatbotSendBtn: document.getElementById("chatbot-send-btn"),
   chatbotCloseBtn: document.getElementById("chatbot-close-btn"),
   chatbotAttachBtn: document.getElementById("chatbot-attach-btn"),
-  chatbotFileInput: document.getElementById("chatbot-file-input")
+  chatbotFileInput: document.getElementById("chatbot-file-input"),
+  chatbotSettingsBtn: document.getElementById("chatbot-settings-btn"),
+  chatbotSettingsView: document.getElementById("chatbot-settings-view"),
+  settingsCloseBtn: document.getElementById("settings-view-close-btn"),
+  settingsApiKeyInput: document.getElementById("settings-api-key-input"),
+  settingsBtnSave: document.getElementById("settings-view-btn-save"),
+  settingsBtnClear: document.getElementById("settings-view-btn-clear"),
+  chatbotHeaderMode: document.getElementById("chatbot-header-mode"),
+  chatbotStatusDot: document.getElementById("chatbot-status-dot")
 };
 
 // --- SPA Router ---
@@ -1446,15 +1454,24 @@ document.addEventListener("DOMContentLoaded", () => {
     State.chatHistory = JSON.parse(savedHistory);
   }
 
+  function getWelcomeMessage() {
+    if (openaiApiKey) {
+      return "Hello! I'm your MagnumKare AI assistant. Currently running in Online AI Mode. Share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!";
+    } else {
+      return "Hello! I'm your MagnumKare AI assistant. Currently running in Offline Fallback Mode (built-in local matching). To enable advanced AI reasoning, click the settings icon above to configure your OpenAI API key.";
+    }
+  }
+
   function renderChatHistory() {
     if (!DOM.chatbotMessagesContainer) return;
     DOM.chatbotMessagesContainer.innerHTML = "";
     if (State.chatHistory.length === 0) {
-      appendMessage("bot", "Hello! I'm your MagnumKare AI assistant. Share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!");
+      appendMessage("bot", getWelcomeMessage());
     } else {
       State.chatHistory.forEach(msg => {
         renderMessageBubble(msg);
       });
+      lucide.createIcons();
     }
   }
 
@@ -1472,6 +1489,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.setItem("magnum_chat_history_time", Date.now().toString());
     }
     renderMessageBubble(msg);
+    lucide.createIcons();
   }
 
   function openBase64InNewTab(dataUrl, title = "Report") {
@@ -1586,7 +1604,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     DOM.chatbotMessagesContainer.appendChild(wrapper);
     DOM.chatbotMessagesContainer.scrollTop = DOM.chatbotMessagesContainer.scrollHeight;
-    lucide.createIcons();
   }
 
   window.openDoctorFromChat = function (docId) {
@@ -1597,11 +1614,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  let isChatHistoryRendered = false;
+
   function openChatbot() {
     DOM.chatbotPanel.classList.add("active");
     DOM.chatbotLauncherBadge.classList.remove("active");
     DOM.chatbotLauncher.classList.add("chatbot-open");
-    renderChatHistory();
+    updateChatbotHeaderMode();
+    if (!isChatHistoryRendered) {
+      renderChatHistory();
+      isChatHistoryRendered = true;
+    }
   }
 
   function closeChatbot() {
@@ -1609,10 +1632,43 @@ document.addEventListener("DOMContentLoaded", () => {
     DOM.chatbotLauncher.classList.remove("chatbot-open");
   }
 
+  let isChatbotProcessing = false;
+
+  function setChatbotLoadingState(isLoading) {
+    isChatbotProcessing = isLoading;
+    if (!DOM.chatbotTextInput) return;
+
+    if (isLoading) {
+      DOM.chatbotTextInput.disabled = true;
+      if (DOM.chatbotSendBtn) DOM.chatbotSendBtn.disabled = true;
+      if (DOM.chatbotAttachBtn) DOM.chatbotAttachBtn.disabled = true;
+      DOM.chatbotTextInput.placeholder = "Please wait, assistant is typing...";
+      
+      const inputArea = DOM.chatbotTextInput.closest(".chatbot-input-area");
+      if (inputArea) inputArea.classList.add("loading-active");
+    } else {
+      DOM.chatbotTextInput.disabled = false;
+      if (DOM.chatbotSendBtn) DOM.chatbotSendBtn.disabled = false;
+      if (DOM.chatbotAttachBtn) DOM.chatbotAttachBtn.disabled = false;
+      
+      const isHinglish = (State.chatLanguage === "hinglish");
+      DOM.chatbotTextInput.placeholder = isHinglish
+        ? "Apne lakshan likhein (jaise bukhar, khansi)..."
+        : "Type symptoms (e.g., cough, fever)...";
+      
+      const inputArea = DOM.chatbotTextInput.closest(".chatbot-input-area");
+      if (inputArea) inputArea.classList.remove("loading-active");
+      
+      DOM.chatbotTextInput.focus();
+    }
+  }
+
   function handleSendMessage() {
+    if (isChatbotProcessing) return;
     const text = DOM.chatbotTextInput.value.trim();
     if (!text) return;
 
+    setChatbotLoadingState(true);
     appendMessage("user", text);
     DOM.chatbotTextInput.value = "";
 
@@ -1621,7 +1677,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
   }
 
-  const OPENAI_API_KEY = "sk-proj-QRvCuF_cJzH5CUUoOGlr52f30IJROc" + "koJClieMdVqQfSc2nsTn8onXEBCH24QVaYlBHmCZXpYMT3BlbkFJOf5D2erTFGAjdnDX9byPiXOzr8KkTZXB5gp7Fg-TUsGR8zdARLXTcjQtHj1J75z2v_3DUn6j8A";
+  let openaiApiKey = localStorage.getItem("openai_api_key") || "";
 
   const UNAMBIGUOUS_HINGLISH_WORDS = new Set([
     // Pronouns & Question words
@@ -1676,12 +1732,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function callOpenAI(messages, fallbackFn) {
+    if (!openaiApiKey) {
+      console.log("No custom OpenAI API key configured. Running in local Offline Fallback Mode.");
+      return fallbackFn();
+    }
+
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENAI_API_KEY}`
+          "Authorization": `Bearer ${openaiApiKey}`
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
@@ -1720,6 +1781,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const typingMsg = isHinglish ? "Bot soch raha hai..." : "Bot is thinking...";
     appendMessage("bot", typingMsg);
 
+    try {
+
     // Prepare system prompt and history
     const doctorsBrief = DOCTORS.map(d => ({
       id: d.id,
@@ -1746,8 +1809,8 @@ Instructions:
 5. If the user asks about a specific doctor (e.g. "dr akash", "dr ankitaverma"), provide their details in the user's style, and put their ID in "recommended_doctor_ids".
 6. Map Devanagari Hindi, Hinglish, and English medical complaints of patients to the correct specialties:
    - Children: "mera baccha", "mere bacche ko", "बच्चा", "बच्चे", "beta/beti ko bukhar/cough" -> Pediatrics (Dr. Gaurav Mishra, Dr. S.K. Jain)
-   - Stomach issues: "pet dard", "pet me dard", "stomach pain", "पेट दर्द", "गैस", "digestive/gas problem" -> General Medicine (Dr. Rishabh Nayak, Dr. Shailendra Kishore Verma, Dr. Tanmay Agrawal)
-   - Dengue, fever: "dengue", "dengu", "dengue fever", "डेंगू", "बुखार", "bukhar/cold/weakness" -> General Medicine (Dr. Rishabh Nayak, Dr. Shailendra Kishore Verma, Dr. Tanmay Agrawal)
+   - Stomach issues: "pet dard", "pet me dard", "stomach pain", "पेट दर्द", "गैस", "digestive/gas problem" -> General Medicine (Dr. Rishabh Nayak, Dr. Shailendra Kishore Verma)
+   - Dengue, malaria, jaundice, typhoid, fever: "dengue", "malaria", "jaundice", "typhoid", "fever", "piliya", "yellow eyes", "yellow urine", "पीलिया", "डेंगू", "बुखार", "मलेरिया", "टायफाइड", "bukhar/cold/weakness/infection" -> General Medicine (Dr. Rishabh Nayak, Dr. Shailendra Kishore Verma)
    - Senior Citizen Care / Geriatrics: "geriatric", "senior citizen", "old age", "bujurg", "budhape", "elderly" -> General Medicine (Dr. Shailendra Kishore Verma)
    - Joint/Bone/Injuries: "perr m chot", "pair me chot", "haddi tootna", "ghutne me dard", "जोड़ों का दर्द", "हड्डी टूटना", "कमार दर्द", "kamar dard" -> Orthopedics (Dr. Pradeep Yadav)
    - Surgery/Stones/Piles: "operation", "pathri", "bawasir", "hernia", "ऑपरेशन", "पित्त की पथरी", "बवासीर" -> General Surgery (Dr. Akash)
@@ -1758,6 +1821,7 @@ Instructions:
    - Pulmonology/Chest: "cough", "asthma", "saans me takleef", "dama", "फेफड़े", "खांसी", "दमा" -> Pulmonologist / Chest Specialist (Dr. Ankita Verma, Dr. Shubham Jain)
    - ICU/Anaesthesia: "icu", "anesthesia", "behoshi", "sunn karna", "बेहोशी", "आईसीयू" -> Anaesthesiology & ICU Specialist (Dr. Saurabh Mishra)
    - Urology/Kidney: "urine infection", "kidney stone", "peshab me jalan", "pathri", "पेशाब में जलन", "किडनी", "प्रोस्टेट" -> Urology (Dr. Mahesh Tripathi)
+   - Heart / Cardiology: "dil me dard", "dhadkan", "heart pain", chest pain (seene mein dard), heart disease (hridaya rog), stroke, heart attack, heart blocker, heart failure, angioplasty, pacemaker, bypass surgery, cardiac -> Cardiology (Dr. Tanmay Agrawal)
 7. If the user uses abusive or inappropriate language, respond with a polite bilingual warning to maintain polite clinical decorum. Do not recommend any doctors.
 8. You MUST return your response ONLY as a JSON object with the following fields:
 {
@@ -1813,13 +1877,19 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
         dental: ["tooth", "teeth", "dentist", "braces", "dental", "aligners", "gums", "cavity", "toothache", "mouth", "dental implant", "daant", "daat", "dant", "masuda", "masude", "keeda", "दाँत", "दांत", "मसूड़े", "मसूड़ा", "दांत दर्द", "तार बांधना"],
         patho: ["blood test", "lab report", "biochemistry", "pathology", "hormone", "thyroid test", "tumor", "diagnostic", "blood check", "lab test", "report check", "रक्त जांच", "खून टेस्ट", "लैब रिपोर्ट", "हार्मोन", "थायराइड", "पेशाब जांच"],
         neuro: ["brain", "spine", "neuro", "nerve", "neurologist", "neurosurgeon", "disc", "back pain", "paralysis", "stroke", "migraine", "headache", "seizure", "dimag", "nas", "nass", "lakwa", "lakva", "daura", "sir dard", "sar dard", "दिमाग", "मस्तिष्क", "नस", "लकवा", "दौरा", "मिर्गी", "सिरदर्द"],
-        ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho", "haddi", "haddiyan", "jod", "ghutna", "kamar dard", "peeth dard", "chot", "perr m dard", "pair m dard", "हड्डी", "हड्डियां", "जोड़", "जोड़ों का दर्द", "घुटने", "गठिया", "मोच", "टूटना"],
+        ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho", "haddi", "haddiyan", "jod", "ghutna", "kamar dard", "peeth dard", "chot", "perr m dard", "pair m dard", "हड्डी", "हड्डियां", "जोड़", "जोड़ों का दर्द", "घुटने", "गठिया", "मोच", "टूटना", "shoulder pain", "neck pain", "backache", "back ache", "body pain", "bodyache", "kamar me dard", "gardan me dard", "gardan dard", "jodo me dard", "jodon ka dard"],
         derma: ["skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss", "chamdi", "daane", "pimpal", "khujli", "chakte", "allargy", "त्वca", "त्वचा", "चमड़ी", "मुहासे", "खुजली", "चकत्ते", "बाल झड़ना", "एलर्जी"],
         chest: ["cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis", "khansi", "dama", "saans", "seene me dard", "chhati me dard", "खांसी", "दमा", "अस्थमा", "फेफड़े", "सांस फूलना", "टीबी", "निमोनिया", "सीना", "छाती"],
-        medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection", "bukhar", "bokhar", "sardi jukam", "sugar", "kamjori", "dengue", "dengu", "pet dard", "pet me dard", "बुखार", "सर्दी", "जुकाम", "मधुमेह", "शुगर", "बीपी", "कमजोरी", "डेंगू", "मलेरिया", "टायफाइड", "पेट दर्द", "geriatric", "geriatrics", "senior citizen", "old age", "bujurg", "budhape", "elderly"],
+        medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection", "bukhar", "bokhar", "sardi jukam", "sugar", "kamjori", "dengue", "dengu", "pet dard", "pet me dard", "बुखार", "सर्दी", "जुकाम", "मधुमेह", "शुगर", "बीपी", "कमजोरी", "डेंगू", "मलेरिया", "टायफाइड", "पेट दर्द", "geriatric", "geriatrics", "senior citizen", "old age", "bujurg", "budhape", "elderly", "malaria", "jaundice", "typhoid", "viral", "flu", "piliya", "vomit", "vomiting", "constipation", "diarrhea", "peela peshab", "piliya disease", "पीलिया", "मलेरिया", "टायफाइड"],
         surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast surgery", "operation", "pathri", "bawasir", "cheera", "cut", "ऑपरेशन", "सर्जरी", "पित्त की पथरी", "हर्निया", "अपेंडिक्स", "बवासीर"],
         urology: ["urology", "urologist", "urinary", "urine", "kidney", "prostate", "kidney stone", "bladder", "renal", "peshab", "peshab me jalan", "peshab me dard", "mutra", "bar bar peshab aana", "पेशाब", "पेशाब में जलन", "किडनी", "किडनी की पथरी", "मूत्र"],
-        ent: ["anesthesia", "anaesthetic", "sedation", "ventilator", "icu", "critical care", "intensive care", "unconscious", "pain block", "numbness", "behoshi", "behosh", "sunn karna", "sun", "बेहोशी", "बेहोश", "सुन्न करना", "आईसीयू", "वेंटीलेटर"]
+        ent: ["anesthesia", "anaesthetic", "sedation", "ventilator", "icu", "critical care", "intensive care", "unconscious", "pain block", "numbness", "behoshi", "behosh", "sunn karna", "sun", "बेहोशी", "बेहोश", "सुन्न करना", "आईसीयू", "वेंटीलेटर"],
+        cardio: [
+          "heart", "cardio", "cardiologist", "angioplasty", "pacemaker", "heart attack", "heart failure", "heart blocker", "bypass surgery", "cardiac", "chest pain", "heart disease", "cardiology", "heart specialist", "palpitations",
+          "dhadkan", "heart pain", "dil me dard", "seene me dard", "dil ka daura", "angioplasty operation", "pacemaker lagna", "seene mein dard", "dil ki bimari", "bp control",
+          "dil ghabra raha hai", "dil tez dhadak raha hai", "seene mein dabaav lag raha hai", "saans phool rahi hai", "dil zor se dhadak raha hai", "dil dhadak raha hai",
+          "दिल", "धड़कन", "एंजियोप्लास्टी", "पेसमेकर", "हृदय रोग", "हार्ट अटैक", "दिल का दौरा", "सीने में दर्द", "हृदय रोग विभाग", "दिल की बीमारी", "हार्ट विशेषज्ञ", "कार्डियोलॉजिस्ट", "दिल जोर से धड़क रहा है", "सीने में दबाव"
+        ]
       };
 
       let matchedCategory = null;
@@ -1859,14 +1929,24 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
       };
     };
 
-    const result = await callOpenAI(messages, offlineFallback);
+      const result = await callOpenAI(messages, offlineFallback);
 
-    // Remove typing loader
-    State.chatHistory = State.chatHistory.filter(msg => msg.text !== typingMsg);
-    localStorage.setItem("magnum_chat_history", JSON.stringify(State.chatHistory));
-    renderChatHistory();
-
-    appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
+      // Remove typing loader first to keep sequence clean
+      State.chatHistory = State.chatHistory.filter(msg => msg.text !== typingMsg);
+      appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
+    } catch (err) {
+      console.error("Error in analyzeSymptomsAndRespond:", err);
+      State.chatHistory = State.chatHistory.filter(msg => msg.text !== typingMsg);
+      const errMsg = isHinglish
+        ? "Maaf kijiyega, kuch takniki dikkat aa gayi hai. Kripya thodi der baad dobara koshish karein."
+        : "I'm sorry, I encountered a technical issue. Please try again in a moment.";
+      appendMessage("bot", errMsg);
+    } finally {
+      State.chatHistory = State.chatHistory.filter(msg => msg.text !== typingMsg);
+      localStorage.setItem("magnum_chat_history", JSON.stringify(State.chatHistory));
+      renderChatHistory();
+      setChatbotLoadingState(false);
+    }
   }
 
   // Register Chatbot Listeners
@@ -1889,6 +1969,85 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
   DOM.chatbotAttachBtn.addEventListener("click", () => {
     DOM.chatbotFileInput.click();
   });
+
+  // Settings view toggle and key management
+  function openSettingsView() {
+    if (DOM.chatbotSettingsView) {
+      DOM.chatbotSettingsView.classList.add("active");
+      if (DOM.settingsApiKeyInput) {
+        DOM.settingsApiKeyInput.value = openaiApiKey;
+      }
+    }
+  }
+
+  function closeSettingsView() {
+    if (DOM.chatbotSettingsView) {
+      DOM.chatbotSettingsView.classList.remove("active");
+    }
+  }
+
+  function updateChatbotHeaderMode() {
+    if (!DOM.chatbotHeaderMode) return;
+    if (openaiApiKey) {
+      DOM.chatbotHeaderMode.innerText = "Online AI Mode";
+      if (DOM.chatbotStatusDot) {
+        DOM.chatbotStatusDot.style.background = "#10b981";
+        DOM.chatbotStatusDot.style.boxShadow = "0 0 8px #10b981";
+      }
+    } else {
+      DOM.chatbotHeaderMode.innerText = "Offline Fallback Mode";
+      if (DOM.chatbotStatusDot) {
+        DOM.chatbotStatusDot.style.background = "#94a3b8";
+        DOM.chatbotStatusDot.style.boxShadow = "none";
+      }
+    }
+  }
+
+  if (DOM.chatbotSettingsBtn) {
+    DOM.chatbotSettingsBtn.addEventListener("click", openSettingsView);
+  }
+  if (DOM.settingsCloseBtn) {
+    DOM.settingsCloseBtn.addEventListener("click", closeSettingsView);
+  }
+  if (DOM.settingsBtnSave) {
+    DOM.settingsBtnSave.addEventListener("click", () => {
+      const keyVal = DOM.settingsApiKeyInput.value.trim();
+      if (!keyVal) {
+        showToast("Key Config", "Please enter a valid API key or reset to offline mode.", "warning");
+        return;
+      }
+      openaiApiKey = keyVal;
+      localStorage.setItem("openai_api_key", keyVal);
+      updateChatbotHeaderMode();
+      closeSettingsView();
+      showToast("Config Saved", "OpenAI API key configured successfully.", "success");
+      
+      // Update welcome message dynamically if history is empty
+      if (State.chatHistory.length <= 1) {
+        State.chatHistory = [];
+        renderChatHistory();
+      }
+    });
+  }
+  if (DOM.settingsBtnClear) {
+    DOM.settingsBtnClear.addEventListener("click", () => {
+      openaiApiKey = "";
+      localStorage.removeItem("openai_api_key");
+      if (DOM.settingsApiKeyInput) DOM.settingsApiKeyInput.value = "";
+      updateChatbotHeaderMode();
+      closeSettingsView();
+      showToast("Offline Mode", "Reverted to local Offline Fallback Mode.", "success");
+      
+      // Update welcome message dynamically if history is empty
+      if (State.chatHistory.length <= 1) {
+        State.chatHistory = [];
+        renderChatHistory();
+      }
+    });
+  }
+
+  // Initialize status on startup
+  updateChatbotHeaderMode();
 
   async function analyzeReportAndRespond(fileName) {
     const normalized = fileName.toLowerCase();
@@ -1940,7 +2099,8 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
         derma: ["skin", "acne", "pimple", "derma", "hair", "scalp", "allergy", "melasma", "eczema"],
         chest: ["chest", "lung", "cough", "asthma", "pulmono", "tb", "copd", "pneumonia", "sputum", "respiratory", "bronch"],
         surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast"],
-        urology: ["urology", "kidney", "urine", "prostate", "bladder", "stone", "renal", "peshab", "mutra"]
+        urology: ["urology", "kidney", "urine", "prostate", "bladder", "stone", "renal", "peshab", "mutra"],
+        cardio: ["heart", "cardio", "ecg", "echo", "angio", "pacemaker", "cardiac", "dhadkan", "dil", "chest pain", "seene"]
       };
 
       let matchedCategory = null;
@@ -1975,11 +2135,22 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
       };
     };
 
-    const result = await callOpenAI(messages, offlineFallback);
-    appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
+    try {
+      const result = await callOpenAI(messages, offlineFallback);
+      appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
+    } catch (err) {
+      console.error("Error in analyzeReportAndRespond:", err);
+      const errMsg = isHinglish
+        ? "Maaf kijiyega, report analyze karne mein kuch dikkat aayi. Kripya thodi der baad dobara koshish karein."
+        : "I'm sorry, I encountered an issue analyzing the report. Please try again in a moment.";
+      appendMessage("bot", errMsg);
+    } finally {
+      setChatbotLoadingState(false);
+    }
   }
 
   DOM.chatbotFileInput.addEventListener("change", (e) => {
+    if (isChatbotProcessing) return;
     const file = e.target.files[0];
     if (!file) return;
 
@@ -1988,7 +2159,13 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
       return;
     }
 
+    setChatbotLoadingState(true);
+
     const reader = new FileReader();
+    reader.onerror = function () {
+      setChatbotLoadingState(false);
+      showToast("Upload Error", "Failed to read file.", "danger");
+    };
     reader.onload = function (evt) {
       const base64Url = evt.target.result;
 
