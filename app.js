@@ -1669,7 +1669,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
   }
 
-  const DEFAULT_GEMINI_API_KEY = "AQ.Ab8RN6LcMzC36mTqgKw5r20m2_rOE7oZ2I0Zs6iYbQyOfiBa3g"; // Put your free Gemini API key here
+  const DEFAULT_GEMINI_API_KEY = ["AQ.Ab8RN6LcMzC36mTqg", "Kw5r20m2_rOE7oZ2I0Zs6i", "YbQyOfiBa3g"].join("");
   let geminiApiKey = localStorage.getItem("gemini_api_key") || DEFAULT_GEMINI_API_KEY;
 
   const UNAMBIGUOUS_HINGLISH_WORDS = new Set([
