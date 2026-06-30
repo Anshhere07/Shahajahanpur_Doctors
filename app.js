@@ -511,12 +511,6 @@ const DOM = {
   chatbotCloseBtn: document.getElementById("chatbot-close-btn"),
   chatbotAttachBtn: document.getElementById("chatbot-attach-btn"),
   chatbotFileInput: document.getElementById("chatbot-file-input"),
-  chatbotSettingsBtn: document.getElementById("chatbot-settings-btn"),
-  chatbotSettingsView: document.getElementById("chatbot-settings-view"),
-  settingsCloseBtn: document.getElementById("settings-view-close-btn"),
-  settingsApiKeyInput: document.getElementById("settings-api-key-input"),
-  settingsBtnSave: document.getElementById("settings-view-btn-save"),
-  settingsBtnClear: document.getElementById("settings-view-btn-clear"),
   chatbotHeaderMode: document.getElementById("chatbot-header-mode"),
   chatbotStatusDot: document.getElementById("chatbot-status-dot")
 };
@@ -1455,11 +1449,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getWelcomeMessage() {
-    if (openaiApiKey) {
-      return "Hello! I'm your MagnumKare AI assistant. Currently running in Online AI Mode. Share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!";
-    } else {
-      return "Hello! I'm your MagnumKare AI assistant. Currently running in Offline Fallback Mode (built-in local matching). To enable advanced AI reasoning, click the settings icon above to configure your OpenAI API key.";
-    }
+    return "Hello! I'm your MagnumKare AI assistant. Share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!";
   }
 
   function renderChatHistory() {
@@ -1615,12 +1605,14 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   let isChatHistoryRendered = false;
+  let isChatbotOnlineMode = true;
+  let onlineModeCooldownUntil = 0;
 
   function openChatbot() {
     DOM.chatbotPanel.classList.add("active");
     DOM.chatbotLauncherBadge.classList.remove("active");
     DOM.chatbotLauncher.classList.add("chatbot-open");
-    updateChatbotHeaderMode();
+    updateChatbotHeaderMode(isChatbotOnlineMode);
     if (!isChatHistoryRendered) {
       renderChatHistory();
       isChatHistoryRendered = true;
@@ -1643,22 +1635,22 @@ document.addEventListener("DOMContentLoaded", () => {
       if (DOM.chatbotSendBtn) DOM.chatbotSendBtn.disabled = true;
       if (DOM.chatbotAttachBtn) DOM.chatbotAttachBtn.disabled = true;
       DOM.chatbotTextInput.placeholder = "Please wait, assistant is typing...";
-      
+
       const inputArea = DOM.chatbotTextInput.closest(".chatbot-input-area");
       if (inputArea) inputArea.classList.add("loading-active");
     } else {
       DOM.chatbotTextInput.disabled = false;
       if (DOM.chatbotSendBtn) DOM.chatbotSendBtn.disabled = false;
       if (DOM.chatbotAttachBtn) DOM.chatbotAttachBtn.disabled = false;
-      
+
       const isHinglish = (State.chatLanguage === "hinglish");
       DOM.chatbotTextInput.placeholder = isHinglish
         ? "Apne lakshan likhein (jaise bukhar, khansi)..."
         : "Type symptoms (e.g., cough, fever)...";
-      
+
       const inputArea = DOM.chatbotTextInput.closest(".chatbot-input-area");
       if (inputArea) inputArea.classList.remove("loading-active");
-      
+
       DOM.chatbotTextInput.focus();
     }
   }
@@ -1677,7 +1669,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }, 1000);
   }
 
-  let openaiApiKey = localStorage.getItem("openai_api_key") || "";
+  const DEFAULT_GEMINI_API_KEY = "AQ.Ab8RN6LcMzC36mTqgKw5r20m2_rOE7oZ2I0Zs6iYbQyOfiBa3g"; // Put your free Gemini API key here
+  let geminiApiKey = localStorage.getItem("gemini_api_key") || DEFAULT_GEMINI_API_KEY;
 
   const UNAMBIGUOUS_HINGLISH_WORDS = new Set([
     // Pronouns & Question words
@@ -1731,36 +1724,66 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function callOpenAI(messages, fallbackFn) {
-    if (!openaiApiKey) {
-      console.log("No custom OpenAI API key configured. Running in local Offline Fallback Mode.");
+  async function callGemini(messages, fallbackFn) {
+    if (!geminiApiKey) {
+      console.log("No Gemini API key configured. Running in local Offline Fallback Mode.");
+      isChatbotOnlineMode = false;
+      updateChatbotHeaderMode(false);
+      return fallbackFn();
+    }
+
+    if (Date.now() < onlineModeCooldownUntil) {
+      console.log("Gemini API is in cooldown due to previous error. Bypassing fetch to prevent console error logs.");
+      isChatbotOnlineMode = false;
+      updateChatbotHeaderMode(false);
       return fallbackFn();
     }
 
     try {
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      const systemMessage = messages.find(m => m.role === "system");
+      const chatMessages = messages.filter(m => m.role !== "system");
+
+      const contents = chatMessages.map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }]
+      }));
+
+      const body = {
+        contents: contents,
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
+      };
+
+      if (systemMessage) {
+        body.systemInstruction = {
+          parts: [{ text: systemMessage.content }]
+        };
+      }
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key=${geminiApiKey}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${openaiApiKey}`
+          "Content-Type": "application/json"
         },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          response_format: { type: "json_object" },
-          messages: messages,
-          temperature: 0.7
-        })
+        body: JSON.stringify(body)
       });
 
       if (!response.ok) {
-        throw new Error("OpenAI API returned error status: " + response.status);
+        throw new Error("Gemini API returned error status: " + response.status);
       }
 
       const data = await response.json();
-      const result = JSON.parse(data.choices[0].message.content.trim());
+      const text = data.candidates[0].content.parts[0].text;
+      const result = JSON.parse(text.trim());
+      isChatbotOnlineMode = true;
+      updateChatbotHeaderMode(true);
       return result;
     } catch (err) {
-      console.error("OpenAI API call failed, using offline fallback:", err);
+      console.error("Gemini API call failed, using offline fallback:", err);
+      onlineModeCooldownUntil = Date.now() + 60 * 1000;
+      isChatbotOnlineMode = false;
+      updateChatbotHeaderMode(false);
       return fallbackFn();
     }
   }
@@ -1783,19 +1806,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
 
-    // Prepare system prompt and history
-    const doctorsBrief = DOCTORS.map(d => ({
-      id: d.id,
-      name: d.name,
-      degrees: d.degrees,
-      specialty: d.specialty,
-      hospital: d.hospital,
-      bio: d.bio,
-      location: d.location,
-      fees: d.fees
-    }));
+      // Prepare system prompt and history
+      const doctorsBrief = DOCTORS.map(d => ({
+        id: d.id,
+        name: d.name,
+        degrees: d.degrees,
+        specialty: d.specialty,
+        hospital: d.hospital,
+        bio: d.bio,
+        location: d.location,
+        fees: d.fees
+      }));
 
-    const systemPrompt = `You are a helpful medical assistant chatbot for the MagnumKare network in Shahjahanpur city, Uttar Pradesh, India.
+      const systemPrompt = `You are a helpful medical assistant chatbot for the MagnumKare network in Shahjahanpur city, Uttar Pradesh, India.
 Your goal is to guide users to the right regional doctors in Shahjahanpur.
 
 Here is the database of available doctors in the MagnumKare network:
@@ -1830,106 +1853,177 @@ Instructions:
 }
 Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched doctors from the database above (e.g. "doc-akash", "doc-rishabh", etc.).`;
 
-    const history = State.chatHistory.filter(msg => msg.text !== typingMsg);
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...history.slice(-8).map(msg => ({
-        role: msg.sender === "user" ? "user" : "assistant",
-        content: msg.text
-      }))
-    ];
+      const history = State.chatHistory.filter(msg => msg.text !== typingMsg);
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...history.slice(-8).map(msg => ({
+          role: msg.sender === "user" ? "user" : "assistant",
+          content: msg.text
+        }))
+      ];
 
-    const offlineFallback = () => {
-      // Check for abusive words
-      const abusiveWords = ["fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick", "pussy", "chutiya", "harami", "kamina", "saala", "kamine", "bhosdike", "gaand", "madarchod", "behenchod", "bhenchod", "bsdk", "luda", "lauda", "loda", "chut", "pandi", "randi", "gandu"];
-      const hasAbusive = words.some(word => abusiveWords.includes(word));
+      const offlineFallback = () => {
+        // Check for abusive words
+        const abusiveWords = ["fuck", "shit", "bitch", "asshole", "bastard", "cunt", "dick", "pussy", "chutiya", "harami", "kamina", "saala", "kamine", "bhosdike", "gaand", "madarchod", "behenchod", "bhenchod", "bsdk", "luda", "lauda", "loda", "chut", "pandi", "randi", "gandu"];
+        const hasAbusive = words.some(word => abusiveWords.includes(word));
 
-      if (hasAbusive) {
-        return {
-          reply: isHinglish
-            ? "Kripya shishtta banaye rakhein. Main yahan regional specialists dhoodhne me aapki madad karne ke liye hoon. Kripya apne symptoms batayein ya doctors ke baare me poochein."
-            : "Please maintain polite communication. I am here to help you find regional specialists. Please describe your symptoms or ask about our doctors.",
-          recommended_doctor_ids: []
-        };
-      }
-
-      if (greetings.includes(cleanText) || isHinglishGreeting) {
-        let greetText = isHinglish ? "Namaste! " : "Hello! ";
-        if (cleanText === "good morning") {
-          greetText = isHinglish ? "Namaste! Shubh prabhat. " : "Good morning! ";
-        } else if (cleanText === "good afternoon") {
-          greetText = isHinglish ? "Namaste! " : "Good afternoon! ";
-        } else if (cleanText === "good evening") {
-          greetText = isHinglish ? "Namaste! Shubh sandhya. " : "Good evening! ";
-        }
-        return {
-          reply: greetText + (isHinglish
-            ? "Aap kaise hain? Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!"
-            : "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!"),
-          recommended_doctor_ids: []
-        };
-      }
-
-      const keywordMap = {
-        eye: ["eye", "eyes", "vision", "cataract", "blind", "blurry", "glasses", "sight", "glaucoma", "redness", "conjunctivitis", "aankh", "ankh", "aankhon", "aankhe", "dhundhla", "motiyabind", "paani aana", "jalan", "आँख", "आँखे", "आँखों", "दृष्टि", "मोतियाबिंद", "धुंधला", "चश्मा"],
-        pediatric: ["child", "baby", "newborn", "kid", "kids", "infant", "pediatric", "teething", "vaccination", "picu", "crying", "baccha", "bacche", "bacha", "bache", "beta", "beti", "bache ko", "bacche ko", "बच्चा", "बच्चे", "बच्चों", "शिशु", "बेटा", "बेटी", "टीकाकरण"],
-        gyne: ["pregnant", "pregnancy", "delivery", "period", "periods", "gynecologist", "gynaecologist", "ivf", "fertility", "uterus", "ovary", "menstruation", "mahila doctor", "lady doctor", "bachadani", "garbhavastha", "गर्भवती", "गर्भावस्था", "डिलिवरी", "मासिक धर्म", "पीरियड", "बांझपन", "गर्भाशय"],
-        dental: ["tooth", "teeth", "dentist", "braces", "dental", "aligners", "gums", "cavity", "toothache", "mouth", "dental implant", "daant", "daat", "dant", "masuda", "masude", "keeda", "दाँत", "दांत", "मसूड़े", "मसूड़ा", "दांत दर्द", "तार बांधना"],
-        patho: ["blood test", "lab report", "biochemistry", "pathology", "hormone", "thyroid test", "tumor", "diagnostic", "blood check", "lab test", "report check", "रक्त जांच", "खून टेस्ट", "लैब रिपोर्ट", "हार्मोन", "थायराइड", "पेशाब जांच"],
-        neuro: ["brain", "spine", "neuro", "nerve", "neurologist", "neurosurgeon", "disc", "back pain", "paralysis", "stroke", "migraine", "headache", "seizure", "dimag", "nas", "nass", "lakwa", "lakva", "daura", "sir dard", "sar dard", "दिमाग", "मस्तिष्क", "नस", "लकवा", "दौरा", "मिर्गी", "सिरदर्द"],
-        ortho: ["joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho", "haddi", "haddiyan", "jod", "ghutna", "kamar dard", "peeth dard", "chot", "perr m dard", "pair m dard", "हड्डी", "हड्डियां", "जोड़", "जोड़ों का दर्द", "घुटने", "गठिया", "मोच", "टूटना", "shoulder pain", "neck pain", "backache", "back ache", "body pain", "bodyache", "kamar me dard", "gardan me dard", "gardan dard", "jodo me dard", "jodon ka dard"],
-        derma: ["skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss", "chamdi", "daane", "pimpal", "khujli", "chakte", "allargy", "त्वca", "त्वचा", "चमड़ी", "मुहासे", "खुजली", "चकत्ते", "बाल झड़ना", "एलर्जी"],
-        chest: ["cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis", "khansi", "dama", "saans", "seene me dard", "chhati me dard", "खांसी", "दमा", "अस्थमा", "फेफड़े", "सांस फूलना", "टीबी", "निमोनिया", "सीना", "छाती"],
-        medicine: ["fever", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection", "bukhar", "bokhar", "sardi jukam", "sugar", "kamjori", "dengue", "dengu", "pet dard", "pet me dard", "बुखार", "सर्दी", "जुकाम", "मधुमेह", "शुगर", "बीपी", "कमजोरी", "डेंगू", "मलेरिया", "टायफाइड", "पेट दर्द", "geriatric", "geriatrics", "senior citizen", "old age", "bujurg", "budhape", "elderly", "malaria", "jaundice", "typhoid", "viral", "flu", "piliya", "vomit", "vomiting", "constipation", "diarrhea", "peela peshab", "piliya disease", "पीलिया", "मलेरिया", "टायफाइड"],
-        surgery: ["surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast surgery", "operation", "pathri", "bawasir", "cheera", "cut", "ऑपरेशन", "सर्जरी", "पित्त की पथरी", "हर्निया", "अपेंडिक्स", "बवासीर"],
-        urology: ["urology", "urologist", "urinary", "urine", "kidney", "prostate", "kidney stone", "bladder", "renal", "peshab", "peshab me jalan", "peshab me dard", "mutra", "bar bar peshab aana", "पेशाब", "पेशाब में जलन", "किडनी", "किडनी की पथरी", "मूत्र"],
-        ent: ["anesthesia", "anaesthetic", "sedation", "ventilator", "icu", "critical care", "intensive care", "unconscious", "pain block", "numbness", "behoshi", "behosh", "sunn karna", "sun", "बेहोशी", "बेहोश", "सुन्न करना", "आईसीयू", "वेंटीलेटर"],
-        cardio: [
-          "heart", "cardio", "cardiologist", "angioplasty", "pacemaker", "heart attack", "heart failure", "heart blocker", "bypass surgery", "cardiac", "chest pain", "heart disease", "cardiology", "heart specialist", "palpitations",
-          "dhadkan", "heart pain", "dil me dard", "seene me dard", "dil ka daura", "angioplasty operation", "pacemaker lagna", "seene mein dard", "dil ki bimari", "bp control",
-          "dil ghabra raha hai", "dil tez dhadak raha hai", "seene mein dabaav lag raha hai", "saans phool rahi hai", "dil zor se dhadak raha hai", "dil dhadak raha hai",
-          "दिल", "धड़कन", "एंजियोप्लास्टी", "पेसमेकर", "हृदय रोग", "हार्ट अटैक", "दिल का दौरा", "सीने में दर्द", "हृदय रोग विभाग", "दिल की बीमारी", "हार्ट विशेषज्ञ", "कार्डियोलॉजिस्ट", "दिल जोर से धड़क रहा है", "सीने में दबाव"
-        ]
-      };
-
-      let matchedCategory = null;
-      let maxMatches = 0;
-
-      Object.keys(keywordMap).forEach(category => {
-        let matches = 0;
-        keywordMap[category].forEach(keyword => {
-          if (normalized.includes(keyword)) {
-            matches++;
-          }
-        });
-        if (matches > maxMatches) {
-          maxMatches = matches;
-          matchedCategory = category;
-        }
-      });
-
-      if (matchedCategory && maxMatches > 0) {
-        const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
-        if (matchedDocs.length > 0) {
-          const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
+        if (hasAbusive) {
           return {
             reply: isHinglish
-              ? `Aapke symptoms ke hisab se, main aapko ${specLabel} ke specialist se consult karne ki salah doonga. Hamari list ke sahi doctors ye hain:`
-              : `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`,
-            recommended_doctor_ids: matchedDocs.map(d => d.id)
+              ? "Kripya shishtta banaye rakhein. Main yahan regional specialists dhoodhne me aapki madad karne ke liye hoon. Kripya apne symptoms batayein ya doctors ke baare me poochein."
+              : "Please maintain polite communication. I am here to help you find regional specialists. Please describe your symptoms or ask about our doctors.",
+            recommended_doctor_ids: []
           };
         }
-      }
 
-      return {
-        reply: isHinglish
-          ? "Mujhe aapke message mein koi specific symptoms nahi mile. Kripya apne symptoms batayein (jaise khansi, bukhar, ghutne me dard, aankh ki samasya) ya medical report upload karein taaki main sahi doctor ka sujhav de sakoon."
-          : "I couldn't identify any specific medical symptoms in your message. Please describe your symptoms (e.g., cough, fever, joint pain, eye issue) or upload a medical report so I can suggest the right doctor.",
-        recommended_doctor_ids: []
+        if (greetings.includes(cleanText) || isHinglishGreeting) {
+          let greetText = isHinglish ? "Namaste! " : "Hello! ";
+          if (cleanText === "good morning") {
+            greetText = isHinglish ? "Namaste! Shubh prabhat. " : "Good morning! ";
+          } else if (cleanText === "good afternoon") {
+            greetText = isHinglish ? "Namaste! " : "Good afternoon! ";
+          } else if (cleanText === "good evening") {
+            greetText = isHinglish ? "Namaste! Shubh sandhya. " : "Good evening! ";
+          }
+          return {
+            reply: greetText + (isHinglish
+              ? "Aap kaise hain? Main aapki kya madad kar sakta hoon? Kripya apne symptoms batayein ya doctors ke baare me poochein, aur main aapko sabse acche specialist ka sujhav doonga!"
+              : "How can I help you today? Please share your symptoms or ask about our doctors, and I'll suggest the best specialist for you!"),
+            recommended_doctor_ids: []
+          };
+        }
+
+        const keywordMap = {
+          eye: [
+            "eye", "eyes", "vision", "cataract", "blind", "blurry", "glasses", "sight", "glaucoma", "redness", "conjunctivitis", "aankh", "ankh", "aankhon", "aankhe", "dhundhla", "motiyabind", "paani aana", "jalan", "आँख", "आँखे", "आँखों", "दृष्टि", "मोतियाबिंद", "धुंधला", "चश्मा",
+            "eye pain", "eyes pain", "pain in eye", "burning eyes", "eye irritation", "eye itching", "itchy eyes", "red eyes", "eye redness", "watery eyes", "tears from eyes", "dry eyes", "blurred vision", "blurry vision", "vision loss", "weak eyesight", "poor vision", "double vision", "black spots", "floaters", "flashing lights", "eye swelling", "eyelid swelling", "eye allergy", "eye infection", "eye injury", "foreign body in eye", "dust in eye", "eye watering", "eye discharge", "sticky eyes", "eye strain", "eye fatigue", "computer vision syndrome", "mobile eye strain", "light sensitivity", "night blindness", "day blindness", "cataract", "glaucoma", "retina problem", "retinal detachment", "macular degeneration", "diabetic retinopathy", "conjunctivitis", "pink eye", "stye", "chalazion", "corneal ulcer", "corneal infection", "corneal abrasion", "keratitis", "uveitis", "squint", "lazy eye", "color blindness", "eye pressure", "high eye pressure", "near vision problem", "distance vision problem", "myopia", "hypermetropia", "astigmatism", "presbyopia", "eye checkup", "eye examination", "vision test", "eye test", "vision check", "eye screening", "retina scan", "oct test", "fundus test", "visual field test", "refraction test", "eye pressure test", "lasik", "cataract surgery", "retina surgery", "eye laser surgery", "lens implant", "icl surgery", "spectacles", "contact lens", "eye drops", "artificial tears", "vision correction", "eye specialist", "ophthalmologist", "eye doctor", "best eye doctor", "eye hospital", "eye clinic", "eye treatment", "eye medicine", "eye operation", "eye surgery", "eye care", "vision care", "child eye doctor", "old age eye problem", "eye problem due to diabetes", "eye problem after injury", "can't see clearly", "vision becoming weak", "eyes burning", "eyes watering continuously", "can't read properly", "can't see tv clearly", "can't see mobile properly", "need new glasses", "eye number increased", "eye checkup near me", "best ophthalmologist", "cataract doctor", "retina specialist", "glaucoma doctor", "lasik doctor",
+            "आंख में दर्द", "आंख्यां में दर्द", "आंखों में दर्द", "आंक दर्द", "आंख दर्द", "आंख में जलन", "आंख में खुजली", "आंखों में खुजली", "आंख लाल होना", "आंख लाल है", "आंख से पानी आना", "आंख से आंसू आना", "आंख सूखना", "धुंधला दिखना", "साफ नहीं दिखना", "नजर कम होना", "आंख कमजोर होना", "कम दिखाई देना", "दो-दो दिखना", "आंखों के सामने काले धब्बे", "आंखों में तैरते धब्बे", "चमक दिखाई देना", "आंख सूजना", "पलक सूजना", "आंख की एलर्जी", "आंख का संक्रमण", "आंख में चोट", "आंख में कुछ चला गया", "आंख में धूल चली गई", "आंख बहना", "आंख से मवाद आना", "आंख चिपकना", "आंख थकना", "आंखों में थकान", "स्क्रीन से आंख खराब", "मोबाइल से आंख दर्द", "रोशनी चुभना", "रात में कम दिखना", "दिन में कम दिखना", "मोतियाबिंद", "ग्लूकोमा", "रेटिना की समस्या", "रेटिना निकलना", "मैक्युला की समस्या", "डायबिटीज से आंख खराब", "आंख आना", "गुहेरी", "पलक की गांठ", "कॉर्निया का घाव", "कॉर्निया संक्रमण", "आंख छिल जाना", "केराटाइटिस", "यूवाइटिस", "भेंगापन", "आलसी आंख", "रंग पहचानने में दिक्कत", "आंख का प्रेशर", "आंख का दबाव", "पास का कम दिखना", "दूर का कम दिखना", "निकट दृष्टि दोष", "दूर दृष्टि दोष", "दृष्टि दोष", "उम्र के साथ नजर कम", "आंख की जांच", "नजर जांच", "आंख टेस्ट", "नजर चेक", "आंख स्क्रीनिंग", "रेटिना स्कैन", "oct टेस्ट", "फंडस टेस्ट", "विज्युअल फील्ड टेस्ट", "चश्मा नंबर टेस्ट", "आंख प्रेशर टेस्ट", "लेसिक", "मोतियाबिंद ऑपरेशन", "रेटिना ऑपरेशन", "आंख लेजर ऑपरेशन", "लेंस लगाना", "icl सर्जरी", "चश्मा", "कॉन्टैक्ट लेंस", "आंख की दवा", "आर्टिफिशियल टीयर्स", "नजर ठीक करना", "आंखों के डॉक्टर", "नेत्र रोग विशेषज्ञ", "आंख डॉक्टर", "सबसे अच्छे आंख डॉक्टर", "आंख अस्पताल", "आंख क्लिनिक", "आंख का इलाज", "आंख का ऑपरेशन", "आंख की सर्जरी", "आंखों की देखभाल", "नजर की देखभाल", "बच्चों के आंख डॉक्टर", "बुजुर्गों की आंख समस्या", "चोट के बाद आंख समस्या", "नजर कमजोर हो रही है", "आंख जल रही है", "आंख से लगातार पानी आ रहा है", "पढ़ने में दिक्कत", "टीवी साफ नहीं दिख रहा", "मोबाइल साफ नहीं दिख रहा", "चश्मा बदलना है", "चश्मे का नंबर बढ़ गया", "आंख जांच",
+            "aankh mein dard", "aankhon mein dard", "aankh dard", "aankh mein jalan", "aankh irritation", "aankh mein khujli", "aankhon mein khujli", "aankh lal hona", "aankh lal hai", "aankh se pani aana", "aankh se aansu aana", "dry eyes", "dhundhla dikhna", "saaf nahi dikh raha", "nazar kam hona", "nazar kamzor hai", "kam dikhai dena", "do do dikhna", "kale dhabbe dikhna", "floaters", "chamak dikhna", "aankh sujan", "palak sujan", "eye allergy", "aankh infection", "aankh mein chot", "aankh mein kuch chala gaya", "aankh mein dhool", "aankh bahna", "aankh se mail aana", "aankh chipakna", "aankh thakna", "aankhon mein thakan", "screen se nazar kharab", "mobile se aankh dard", "roshni chubhna", "raat mein kam dikhna", "din mein kam dikhna", "motiyabind", "glaucoma", "retina problem", "retina nikalna", "macula problem", "diabetes se nazar kam", "aankh aana", "pink eye", "guheri", "palak ki gaanth", "cornea ulcer", "cornea infection", "cornea scratch", "keratitis", "uveitis", "squint", "lazy eye", "color blindness", "aankh ka pressure", "eye pressure", "eye pressure high", "paas ka kam dikhna", "door ka kam dikhna", "myopia", "hypermetropia", "astigmatism", "chashma lagna", "aankh checkup", "eye examination", "nazar test", "eye test", "nazar check", "eye screening", "retina scan", "oct test", "fundus test", "field test", "chashma number test", "eye pressure test", "lasik", "motiyabind operation", "retina operation", "eye laser", "lens lagwana", "icl surgery", "chashma", "contact lens", "eye drops", "artificial tears", "nazar theek karna", "eye specialist", "ophthalmologist", "eye doctor", "best eye doctor", "eye hospital", "eye clinic", "eye treatment", "eye medicine", "eye operation", "eye surgery", "eye care", "vision care", "child eye doctor", "buzurg aankh problem", "diabetes eye problem", "chot ke baad aankh problem", "nazar kamzor ho rahi hai", "aankh jal rahi hai", "aankh se lagatar pani aa raha hai", "padhne mein dikkat", "tv saaf nahi dikh raha", "mobile saaf nahi dikh raha", "chashma badalna hai", "chashme ka number badh gaya", "eye checkup near me", "best ophthalmologist", "cataract doctor", "retina specialist", "glaucoma doctor", "lasik doctor"
+          ],
+          pediatric: [
+            "child", "baby", "newborn", "kid", "kids", "infant", "pediatric", "teething", "vaccination", "picu", "crying", "baccha", "bacche", "bacha", "bache", "beta", "beti", "bache ko", "bacche ko", "बच्चा", "बच्चे", "बच्चों", "शिशु", "बेटा", "बेटी", "टीकाकरण",
+            "child doctor", "pediatrician", "child specialist", "baby doctor", "newborn specialist", "infant care", "child fever", "high fever in child", "mild fever", "fever not reducing", "child cough", "dry cough", "wet cough", "child cold", "runny nose", "blocked nose", "sneezing", "child vomiting", "vomiting after milk", "child diarrhea", "loose motion", "constipation", "stomach pain", "colic pain", "gas problem", "baby crying", "baby crying continuously", "excessive crying", "child not eating", "loss of appetite", "baby not drinking milk", "difficulty feeding", "child weakness", "weight loss", "poor weight gain", "malnutrition", "child not growing", "short height", "development delay", "speech delay", "walking delay", "child not speaking", "child not walking", "child not sitting", "child not crawling", "child sleeping too much", "child not sleeping", "restless child", "child irritable", "baby breathing fast", "difficulty breathing", "wheezing", "chest congestion", "child asthma", "allergy", "dust allergy", "milk allergy", "food allergy", "skin rash", "red spots", "itching", "eczema", "chickenpox", "measles", "mumps", "dengue", "malaria", "typhoid", "viral fever", "hand foot mouth disease", "hfmd", "ear pain", "ear infection", "ear discharge", "sore throat", "tonsils", "mouth ulcers", "tooth pain", "teething pain", "eye infection", "watery eyes", "red eyes", "headache", "dizziness", "fits", "seizures", "febrile seizure", "autism", "adhd", "hyperactive child", "poor concentration", "memory problem", "worms", "deworming", "anemia", "vitamin deficiency", "vitamin d deficiency", "calcium deficiency", "child checkup", "growth checkup", "vaccination", "vaccine", "immunization", "newborn checkup", "premature baby", "low birth weight", "jaundice in baby", "child nutrition", "healthy baby", "child health", "pediatric opd", "child emergency", "baby vaccination schedule", "baby not active", "baby sleeping too much", "baby not passing stool", "baby not passing urine", "child dehydration", "sunken eyes", "child weight check", "child height check", "child bmi", "child nutrition advice",
+            "बच्चों के डॉक्टर", "बाल रोग विशेषज्ञ", "शिशु रोग विशेषज्ञ", "नवजात शिशु विशेषज्ञ", "शिशु देखभाल", "बच्चे को बुखार", "बच्चे को तेज बुखार", "हल्का बुखार", "बुखार नहीं उतर रहा", "बच्चे को खांसी", "सूखी खांसी", "बलगम वाली खांसी", "बच्चे को जुकाम", "नाक बह रही है", "नाक बंद है", "छींक आ रही है", "बच्चे को उल्टी", "दूध पीकर उल्टी", "बच्चे को दस्त", "पतले दस्त", "कब्ज", "पेट दर्द", "पेट में मरोड़", "गैस", "बच्चा रो रहा है", "बच्चा लगातार रो रहा है", "बहुत रोता है", "बच्चा खाना नहीं खा रहा", "भूख नहीं लग रही", "बच्चा दूध नहीं पी रहा", "दूध पीने में दिक्कत", "बच्चे को कमजोरी", "वजन कम हो रहा है", "वजन नहीं बढ़ रहा", "कुपोषण", "बच्चा बढ़ नहीं रहा", "लंबाई नहीं बढ़ रही", "विकास में देरी", "बोलने में देरी", "चलने में देरी", "बच्चा बोल नहीं रहा", "बच्चा चल नहीं रहा", "बच्चा बैठ नहीं रहा", "बच्चा रेंग नहीं रहा", "बच्चा बहुत सोता है", "बच्चा सो नहीं रहा", "बच्चा बेचैन है", "बच्चा चिड़चिड़ा है", "बच्चा तेज सांस ले रहा", "सांस लेने में दिक्कत", "सीटी जैसी आवाज", "सीने में जकड़न", "बच्चे को अस्थमा", "एलर्जी", "धूल से एलर्जी", "दूध से एलर्जी", "खाने से एलर्जी", "त्वचा पर दाने", "लाल दाने", "खुजली", "एक्जिमा", "चिकनपॉक्स", "खसरा", "गलसुआ", "डेंगू", "मलेरिया", "टाइफाइड", "वायरल बुखार", "हाथ पैर मुंह रोग", "कान दर्द", "कान का संक्रमण", "कान से पानी", "गले में दर्द", "टॉन्सिल", "मुंह के छाले", "दांत दर्द", "दांत निकल रहे हैं", "आंख आना", "आंख से पानी", "आंख लाल", "सिर दर्द", "चक्कर", "दौरा", "मिर्गी का दौरा", "बुखार में दौरा", "ऑटिज्म", "एडीएचडी", "बच्चा बहुत शरारती", "ध्यान नहीं लगता", "याद नहीं रहता", "पेट में कीड़े", "कीड़े की दवा", "खून की कमी", "विटामिन की कमी", "विटामिन d की कमी", "कैल्शियम की कमी", "बच्चे की जांच", "ग्रोथ चेकअप", "टीकाकरण", "टीका", "प्रतिरक्षण", "नवजात जांच", "समय से पहले जन्म", "कम वजन का बच्चा", "नवजात पीलिया", "बच्चे का पोषण", "स्वस्थ बच्चा", "बच्चे की सेहत", "बाल रोग ओपीडी", "बच्चे की इमरजेंसी", "टीकाकरण चार्ट", "बच्चा सुस्त है", "बच्चा ज्यादा सो रहा", "बच्चा पॉटी नहीं कर रहा", "बच्चा पेशाब नहीं कर रहा", "बच्चे में पानी की कमी", "आंख धंस गई", "बच्चे का वजन", "बच्चे की लंबाई", "बच्चे का bmi", "बच्चे की डाइट", "बच्चे की growth नहीं हो रही", "बच्चे को vitamin की कमी है",
+            "bacchon ke doctor", "pediatrician", "child specialist", "baby doctor", "newborn specialist", "infant care", "bacche ko bukhar", "bacche ko tez bukhar", "halka bukhar", "bukhar nahi utar raha", "bacche ko khansi", "sukhi khansi", "balgam wali khansi", "bacche ko jukam", "naak beh rahi hai", "naak band hai", "chheenk aa rahi hai", "bacche ko ulti", "doodh peekar ulti", "bacche ko dast", "loose motion", "kabz", "pet dard", "pet mein marod", "gas", "baccha ro raha hai", "baccha lagatar rota hai", "baccha lagatar ro raha hai", "bahut rota hai", "baccha khana nahi kha raha", "bhook nahi lag rahibaccha doodh nahi pee raha", "doodh pine mein dikkat", "bacche ko kamzori", "wajan kam ho raha hai", "wajan nahi badh raha", "kuposhan", "baccha badh nahi raha", "lambai nahi badh rahi", "development delay", "speech delay", "walking delay", "baccha bol nahi raha", "baccha chal nahi raha", "baccha baith nahi raha", "baccha reng nahi raha", "baccha bahut sota hai", "baccha so nahi raha", "baccha bechain hai", "baccha chidchida hai", "baccha tez saans le raha", "saans lene mein dikkat", "seeti jaisi aawaz", "seene mein jakadan", "bacche ko asthma", "allergy", "dhool allergy", "doodh allergy", "khane se allergy", "skin rash", "lal dane", "khujli", "eczema", "chickenpox", "khasra", "galsua", "dengue", "malaria", "typhoid", "viral bukhar", "hfmd", "kaan dard", "kaan infection", "kaan se pani", "gale mein dard", "tonsils", "muh ke chhale", "daant dard", "daant nikal rahe hain", "aankh aana", "aankh se pani", "aankh lal", "sir dard", "chakkar", "daura", "seizure", "bukhar mein daura", "autism", "adhd", "hyperactive child", "dhyan nahi lagta", "yaad nahi rehta", "pet mein keede", "keede ki dawa", "khoon ki kami", "vitamin ki kami", "vitamin d kami", "calcium kami", "child checkup", "growth checkup", "vaccination", "teeka", "immunization", "newborn checkup", "premature baby", "low birth weight", "baby jaundice", "child nutrition", "healthy baby", "child health", "pediatric opd", "child emergency", "vaccination chart", "baccha sust hai", "baccha zyada so raha", "baccha potty nahi kar raha", "baccha peshab nahi kar raha", "bacche mein pani ki kami", "aankh dhans gayi", "bacche ka wajan", "bacche ki lambai", "child bmi", "bacche ki diet", "mera baccha doodh nahi pee raha", "baccha khana nahi kha raha", "bacche ko bukhar aa gaya", "baccha baar baar ro raha hai", "bacche ko khansi ho rahi hai", "bacche ki naak beh rahi hai", "bacche ko saans lene mein dikkat hai", "baccha ulti kar raha hai", "bacche ko dast lag gaye", "baccha bahut kamzor hai", "baccha mota nahi ho raha", "bacche ka weight nahi badh raha", "baccha chal nahi raha", "baccha bol nahi raha", "baccha baith nahi raha", "baccha raat bhar rota hai", "bacche ko allergy ho gayi", "bacche ko daane nikal aaye", "bacche ko kaan dard hai", "bacche ki aankh lal hai", "bacche ke muh mein chhale hain", "bacche ko teeka kab lagwana hai", "baccha baar baar beemar padta hai", "best child doctor near me", "bacchon ka doctor", "child specialist near me", "pediatrician shahjahanpur", "baby doctor", "newborn doctor", "bacche ki growth nahi ho rahi", "bacche ko vitamin ki kami hai"
+          ],
+          gyne: [
+            "pregnant", "pregnancy", "delivery", "period", "periods", "gynecologist", "gynaecologist", "ivf", "fertility", "uterus", "ovary", "menstruation", "mahila doctor", "lady doctor", "bachadani", "garbhavastha", "गर्भवती", "गर्भावस्था", "डिलिवरी", "मासिक धर्म", "पीरियड", "बांझपन", "गर्भाशय",
+            "gynecologist", "women's doctor", "pregnancy test", "positive pregnancy", "negative pregnancy", "missed period", "delayed period", "irregular periods", "no periods", "early period", "heavy bleeding", "light bleeding", "spotting", "period pain", "severe period pain", "cramps", "lower abdominal pain", "pelvic pain", "white discharge", "vaginal discharge", "yellow discharge", "green discharge", "bad smell discharge", "vaginal itching", "burning during urination", "frequent urination", "pain during urination", "uti", "pcos", "pcod", "ovarian cyst", "fibroids", "endometriosis", "adenomyosis", "infertility", "female infertility", "unable to conceive", "trying to conceive", "iui", "fertility treatment", "ovulation", "ovulation pain", "pregnancy symptoms", "morning sickness", "vomiting in pregnancy", "nausea", "pregnancy weakness", "baby movement", "baby not moving", "high risk pregnancy", "twin pregnancy", "ectopic pregnancy", "miscarriage", "recurrent miscarriage", "bleeding in pregnancy", "high bp in pregnancy", "gestational diabetes", "normal delivery", "c section", "labor pain", "delivery pain", "pregnancy checkup", "anc checkup", "ultrasound", "pregnancy scan", "fetal growth", "baby weight", "low baby weight", "placenta problem", "breast pain", "breast lump", "nipple pain", "breast infection", "breastfeeding problem", "less milk supply", "excess milk", "menopause", "hot flashes", "vaginal dryness", "hormonal imbalance", "cervical cancer", "uterus cancer", "ovarian cancer", "pap smear", "hpv test", "pregnancy diet", "pregnancy vitamins", "folic acid", "iron deficiency", "anemia in pregnancy", "calcium in pregnancy", "vaginal infection", "yeast infection", "std", "sti", "family planning", "contraception", "birth control pills", "copper t", "pregnancy consultation", "best gynecologist", "women's health", "female checkup",
+            "स्त्री रोग विशेषज्ञ", "महिला डॉक्टर", "गर्भावस्था", "गर्भवती", "प्रेग्नेंसी टेस्ट", "प्रेग्नेंसी पॉजिटिव", "प्रेग्नेंसी नेगेटिव", "पीरियड मिस होना", "पीरियड लेट होना", "अनियमित पीरियड्स", "पीरियड नहीं आना", "जल्दी पीरियड आना", "ज्यादा ब्लीडिंग", "कम ब्लीडिंग", "स्पॉटिंग", "पीरियड दर्द", "बहुत दर्द वाले पीरियड", "पेट में ऐंठन", "पेट के नीचे दर्द", "पेल्विक दर्द", "सफेद पानी", "योनि से स्राव", "पीला डिस्चार्ज", "हरा डिस्चार्ज", "बदबूदार डिस्चार्ज", "योनि में खुजली", "पेशाब में जलन", "बार-बार पेशाब", "पेशाब करते समय दर्द", "यूरिन इन्फेक्शन", "पीसीओएस", "पीसीओडी", "अंडाशय की गांठ", "गर्भाशय की गांठ", "एंडोमेट्रियोसिस", "एडेनोमायोसिस", "बांझपन", "महिला बांझपन", "गर्भ नहीं ठहर रहा", "गर्भधारण की कोशिश", "आईवीएफ", "आईयूआई", "प्रजनन उपचार", "अंडोत्सर्जन", "ओवुलेशन दर्द", "गर्भावस्था के लक्षण", "सुबह उल्टी", "गर्भावस्था में उल्टी", "जी मिचलाना", "गर्भावस्था में कमजोरी", "बच्चे की हलचल", "बच्चा हिल नहीं रहा", "हाई रिस्क प्रेग्नेंसी", "जुड़वा गर्भावस्था", "एक्टोपिक प्रेग्नेंसी", "गर्भपात", "बार-बार गर्भपात", "प्रेग्नेंसी में ब्लीडिंग", "गर्भावस्था में हाई बीपी", "गर्भकालीन मधुमेह", "सामान्य प्रसव", "सीजेरियन", "प्रसव पीड़ा", "डिलीवरी दर्द", "गर्भावस्था जांच", "एएनसी जांच", "अल्ट्रासाउंड", "प्रेग्नेंसी स्कैन", "बच्चे की ग्रोथ", "बच्चे का वजन", "बच्चे का कम वजन", "प्लेसेंटा समस्या", "स्तन दर्द", "स्तन में गांठ", "निप्पल दर्द", "स्तन संक्रमण", "स्तनपान समस्या", "दूध कम बनना", "ज्यादा दूध", "रजोनिवृत्ति", "गर्मी लगना", "योनि में सूखापन", "हार्मोन असंतुलन", "सर्वाइकल कैंसर", "गर्भाशय कैंसर", "अंडाशय कैंसर", "पैप स्मीयर", "एचपीवी टेस्ट", "प्रेग्नेंसी डाइट", "प्रेग्नेंसी विटामिन", "फोलिक एसिड", "आयरन की कमी", "गर्भावस्था में खून की कमी", "कैल्शियम", "योनि संक्रमण", "फंगल संक्रमण", "यौन संक्रमण", "यौन रोग", "परिवार नियोजन", "गर्भनिरोधक", "गर्भनिरोधक गोलियां", "कॉपर टी", "गर्भावस्था सलाह", "सबसे अच्छे स्त्री रोग विशेषज्ञ", "महिला स्वास्थ्य", "महिला जांच",
+            "mahila doctor", "lady doctor", "pregnancy positive", "pregnancy negative", "period miss hona", "period late hona", "irregular periods", "period nahi aana", "jaldi period aana", "jyada bleeding", "kam bleeding", "spotting", "period pain", "bahut dard wale period", "pet mein ainthan", "pet ke niche dard", "pelvic pain", "safed pani", "vaginal discharge", "peela discharge", "hara discharge", "badbu wala discharge", "vaginal khujli", "peshab mein jalan", "bar bar peshab", "peshab karte samay dard", "uti", "ovarian cyst", "fibroids", "endometriosis", "adenomyosis", "infertility", "female infertility", "garbh nahi thahar raha", "baby plan kar rahe hain", "iui", "fertility treatment", "ovulation", "ovulation pain", "pregnancy symptoms", "morning sickness", "pregnancy mein ulti", "ji michlana", "pregnancy weakness", "baby movement", "baby move nahi kar raha", "high risk pregnancy", "twin pregnancy", "ectopic pregnancy", "miscarriage", "bar bar miscarriage", "pregnancy mein bleeding", "pregnancy high bp", "pregnancy sugar", "normal delivery", "c section", "labor pain", "delivery pain", "pregnancy checkup", "anc checkup", "ultrasound", "pregnancy scan", "baby growth", "baby weight", "baby weight kam", "placenta problem", "breast pain", "breast lump", "nipple pain", "breast infection", "breastfeeding problem", "doodh kam banana", "jyada doodh", "menopause", "hot flashes", "vaginal dryness", "hormonal problem", "cervical cancer", "uterus cancer", "ovarian cancer", "pap smear", "hpv test", "pregnancy diet", "pregnancy vitamins", "folic acid", "iron ki kami", "pregnancy anemia", "calcium pregnancy", "vaginal infection", "yeast infection", "std", "sti", "family planning", "contraception", "birth control pills", "copper t", "pregnancy consultation", "best gynecologist", "women's health", "female checkup",
+            "mere periods late ho gaye", "period nahi aa rahe", "period jaldi aa gaye", "period me bahut dard hota hai", "pet ke niche dard hai", "safed pani aa raha hai", "white discharge ho raha hai", "peshab me jalan hai", "pregnancy test positive hai", "pregnancy test negative hai", "mujhe pregnancy hai kya", "pregnancy ke shuruaati lakshan", "pregnancy me ulti ho rahi hai", "pregnancy me khoon aa raha hai", "baccha pet me kam hil raha hai", "baby movement nahi ho rahi", "garbh nahi thahar raha", "baby conceive nahi ho raha", "ivf doctor", "pcos ka ilaj", "pcod treatment", "ovarian cyst ka ilaj", "mahila doctor near me", "best gynecologist", "delivery doctor", "normal delivery doctor", "c section doctor", "pregnancy checkup", "sonography karwani hai", "pregnancy ultrasound", "breast me dard hai", "breast me ganth hai", "doodh kam aa raha hai", "menopause ke lakshan", "hormone problem", "mahila rog doctor", "garbhashay ki problem", "baccha plan karna hai", "pregnancy planning", "pregnancy diet", "pregnancy vitamins", "white pani ka ilaj", "mahila rog ka doctor", "peshab baar baar aa raha hai", "pregnancy me bp badh gaya", "pregnancy me sugar ho gayi", "pregnancy specialist", "delivery hospital", "pregnancy doctor shahjahanpur", "beta hcg", "hormone test", "प्रेग्नेंसी की जांच", "बीटा HCG टेस्ट", "हॉर्मोन टेस्ट", "पीसीओएस टेस्ट", "प्रेग्नेंसी टेस्ट करवाना है"
+          ],
+          dental: [
+            "tooth", "teeth", "dentist", "braces", "dental", "aligners", "gums", "cavity", "toothache", "mouth", "dental implant", "daant", "daat", "dant", "masuda", "masude", "keeda", "दाँत", "दांत", "मसूड़े", "मसूड़ा", "दांत दर्द", "तार बांधना",
+            "dental doctor", "tooth pain", "teeth pain", "severe tooth pain", "sensitive teeth", "hot sensitivity", "cold sensitivity", "sweet sensitivity", "tooth decay", "cavities", "dental caries", "broken tooth", "chipped tooth", "loose tooth", "missing tooth", "tooth extraction", "wisdom tooth", "wisdom tooth pain", "wisdom tooth removal", "root canal", "root canal treatment", "dental filling", "tooth filling", "dental crown", "tooth cap", "dental bridge", "tooth implant", "artificial tooth", "dentures", "partial denture", "full denture", "metal braces", "ceramic braces", "invisible braces", "clear aligners", "invisalign", "crooked teeth", "misaligned teeth", "gap between teeth", "teeth straightening", "orthodontist", "bite problem", "overbite", "underbite", "crossbite", "open bite", "jaw pain", "tmj pain", "mouth ulcer", "tongue ulcer", "gum pain", "gum swelling", "bleeding gums", "gum infection", "gingivitis", "periodontitis", "bad breath", "mouth odor", "dry mouth", "tooth grinding", "teeth clenching", "jaw lock", "mouth opening problem", "oral infection", "oral cancer", "white patch", "red patch", "tobacco lesion", "teeth cleaning", "scaling", "polishing", "teeth whitening", "smile makeover", "veneers", "cosmetic dentistry", "child dentist", "pediatric dentist", "milk tooth", "baby teeth", "tooth eruption", "delayed teeth", "dental x-ray", "opg x-ray", "cbct scan", "dental checkup", "oral checkup", "dental surgery", "tooth repair", "broken filling", "crown replacement", "implant failure", "tooth fracture", "tooth abscess", "facial swelling", "swollen jaw",
+            "दंत चिकित्सक", "दांतों के डॉक्टर", "दांत में दर्द", "दांतों में दर्द", "दांत दर्द", "तेज दांत दर्द", "दांत में झनझनाहट", "गरम खाने पर दर्द", "ठंडा खाने पर दर्द", "मीठा खाने पर दर्द", "दांत सड़ना", "दांत में कीड़ा", "दांत खराब होना", "दांत टूटना", "दांत का कोना टूटना", "दांत हिलना", "दांत गिर गया", "दांत निकालना", "अकल दाढ़", "अकल दाढ़ में दर्द", "अकल दाढ़ निकलवाना", "रूट कैनाल", "रूट कैनाल इलाज", "दांत भरना", "कैविटी भरना", "दांत का कैप", "डेंटल ब्रिज", "दांत का इम्प्लांट", "नया दांत लगवाना", "नकली दांत", "दांतों की तार", "मेटल ब्रेसेस", "सिरेमिक ब्रेसेस", "अदृश्य ब्रेसेस", "क्लियर अलाइनर", "इनविज़लाइन", "टेढ़े दांत", "दांत टेढ़े हैं", "दांतों में गैप", "दांत सीधे करना", "काटने में दिक्कत", "जबड़े में दर्द", "जबड़ा जाम होना", "मुंह के छाले", "जीभ पर छाला", "मसूड़ों में दर्द", "मसूड़े सूजना", "मसूड़ों से खून आना", "मसूड़ों का संक्रमण", "मसूड़ों की सूजन", "मसूड़ों की बीमारी", "मुंह से बदबू", "सांस से बदबू", "मुंह सूखना", "दांत पीसना", "दांत भींचना", "मुंह नहीं खुल रहा", "मुंह खोलने में दिक्कत", "मुंह का संक्रमण", "मुंह का कैंसर", "मुंह में सफेद दाग", "मुंह में लाल दाग", "तंबाकू से मुंह खराब", "दांतों की सफाई", "स्केलिंग", "दांत चमकाना", "दांत सफेद करना", "मुस्कान सुधारना", "वेनियर्स", "कॉस्मेटिक डेंटिस्ट्री", "बच्चों के दांतों के डॉक्टर", "बाल दंत विशेषज्ञ", "दूध का दांत", "बच्चों के दांत", "दांत निकलना", "दांत देर से निकलना", "दांत का एक्स-रे", "ओपीजी एक्स-रे", "सीबीसीटी स्कैन", "दांतों की जांच", "मुंह की जांच", "दांतों की सर्जरी", "दांत ठीक करना", "फिलिंग निकल गई", "कैप बदलना", "इम्प्लांट में दिक्कत", "दांत में दरार", "दांत में पस", "चेहरे में सूजन", "जबड़ा सूजना",
+            "daanton ke doctor", "daant mein dard", "daanton mein dard", "daant dard", "tez daant dard", "daant mein jhanjhanahat", "garam khane par dard", "thanda khane par dard", "meetha khane par dard", "daant sadna", "daant mein keeda", "dental caries", "daant toot gaya", "daant ka kona toot gaya", "daant hil raha hai", "daant gir gaya", "daant nikalwana", "akal daadh", "akal daadh mein dard", "akal daadh nikalwana", "root canal", "root canal treatment", "filling karwana", "daant filling", "tooth cap", "daant ka cap", "dental bridge", "dental implant", "tooth implant", "nakli daant", "denture", "partial denture", "full denture", "braces", "metal braces", "ceramic braces", "invisible braces", "clear aligners", "invisalign", "tedhe daant", "daant tedhe hain", "daanton mein gap", "daant seedhe karna", "orthodontist", "bite problem", "overbite", "underbite", "crossbite", "open bite", "jabde mein dard", "jaw joint pain", "muh ke chhale", "jeebh par chhala", "masoodon mein dard", "masooda sujan", "masoodon se khoon", "gum infection", "gingivitis", "periodontitis", "muh se badbu", "saans se badbu", "muh sookhna", "daant peesna", "daant bheenchna", "muh nahi khul raha", "muh kholne mein dikkat", "oral infection", "oral cancer", "muh mein safed daag", "muh mein lal daag", "tambaku se muh kharab", "teeth cleaning", "scaling", "polishing", "teeth whitening", "smile makeover", "veneers", "cosmetic dentistry", "child dentist", "pediatric dentist", "milk tooth", "baby teeth", "daant nikalna", "daant der se nikalna", "dental x-ray", "opg x-ray", "cbct scan", "dental checkup", "oral checkup", "dental surgery", "tooth repair", "filling nikal gayi", "cap badalna", "implant problem", "daant mein darar", "daant mein pus", "chehre mein sujan", "jabda sujan",
+            "mere daant mein bahut dard hai", "daant mein keeda lag gaya", "daant hil raha hai", "daant toot gaya", "daant nikalwana hai", "root canal karwana hai", "daant ka cap lagwana hai", "akal daadh mein dard hai", "akal daadh nikalwani hai", "daant saaf karwane hain", "muh se badbu aati hai", "masoodon se khoon aa raha hai", "masooda suj gaya hai", "muh mein chhale ho gaye", "muh nahi khul raha", "daant tedhe hain", "braces lagwane hain", "invisible braces ki price", "aligners lagwane hain", "smile theek karwani hai", "daant safed karwane hain", "nakli daant lagwana hai", "implant karwana hai", "bacche ke daant tedhe hain", "bacche ka daant toot gaya", "doodh ka daant nahi gira", "daant mein thanda lagta hai", "garam khane se daant dard karta hai", "meetha khane se dard hota hai", "daant ka doctor", "best dentist near me", "orthodontist near me", "dental clinic", "dental hospital", "teeth cleaning near me", "root canal specialist", "implant specialist", "smile correction doctor", "jaw pain doctor", "mouth ulcer doctor", "gum specialist", "tooth replacement", "daant ka operation", "muh ka cancer doctor", "dental x-ray", "opg karwana hai", "daant ka checkup", "masooda ka ilaj", "daant mein sujan hai", "daant ki filling karwani hai"
+          ],
+          patho: [
+            "blood test", "lab report", "biochemistry", "pathology", "hormone", "thyroid test", "tumor", "diagnostic", "blood check", "lab test", "report check", "रक्त जांच", "खून टेस्ट", "लैब रिपोर्ट", "हॉर्मोन", "थायराइड", "पेशाब जांच",
+            "blood checkup", "blood report", "pathology test", "medical test", "health checkup", "full body checkup", "executive health checkup", "preventive health checkup", "cbc test", "complete blood count", "hemoglobin test", "hb test", "wbc count", "rbc count", "platelet count", "esr test", "blood group test", "sugar test", "blood sugar", "diabetes test", "fasting sugar", "pp sugar", "random sugar", "hba1c", "glucose test", "kidney function test", "kft", "creatinine test", "blood urea", "uric acid", "electrolytes", "sodium test", "potassium test", "liver function test", "lft", "sgot", "sgpt", "bilirubin", "albumin", "thyroid test", "thyroid profile", "tsh", "t3", "t4", "lipid profile", "cholesterol test", "hdl", "ldl", "triglycerides", "vitamin d test", "vitamin b12 test", "calcium test", "iron test", "ferritin test", "urine test", "urine routine", "urine microscopy", "urine culture", "stool test", "stool routine", "stool culture", "semen analysis", "pregnancy test", "beta hcg", "dengue test", "ns1 antigen", "dengue igg", "dengue igm", "malaria test", "mp test", "typhoid test", "widal test", "covid test", "rt-pcr", "rapid antigen test", "tb test", "sputum test", "mantoux test", "hiv test", "hbsag", "hcv test", "vdrl test", "crp test", "d-dimer", "procalcitonin", "ana test", "rheumatoid factor", "ana profile", "allergy test", "ige test", "hormone test", "testosterone test", "estrogen test", "progesterone test", "prolactin test", "amh test", "psa test", "blood culture", "culture sensitivity", "biopsy", "histopathology", "fnac", "pap smear", "hpv test",
+            "खून की जांच", "खून जांच", "खून की रिपोर्ट", "लैब टेस्ट", "पैथोलॉजी जांच", "मेडिकल जांच", "स्वास्थ्य जांच", "पूरे शरीर की जांच", "हेल्थ पैकेज", "निवारक स्वास्थ्य जांच", "सीबीसी टेस्ट", "सम्पूर्ण रक्त जांच", "हीमोग्लोबिन जांच", "hb टेस्ट", "सफेद रक्त कोशिका जांच", "लाल रक्त कोशिका जांच", "प्लेटलेट जांच", "ईएसआर टेस्ट", "ब्लड ग्रुप जांच", "शुगर जांच", "ब्लड शुगर", "डायबिटीज जांच", "फास्टिंग शुगर", "खाना खाने के बाद शुगर", "रैंडम शुगर", "HbA1c जांच", "ग्लूकोज जांच", "किडनी जांच", "KFT टेस्ट", "क्रिएटिनिन टेस्ट", "यूरिया टेस्ट", "यूरिक एसिड", "इलेक्ट्रोलाइट जांच", "सोडियम जांच", "पोटेशियम जांच", "लिवर जांच", "LFT टेस्ट", "SGOT टेस्ट", "SGPT टेस्ट", "बिलीरुबिन जांच", "एल्ब्यूमिन टेस्ट", "थायराइड जांच", "थायराइड प्रोफाइल", "TSH टेस्ट", "T3 टेस्ट", "T4 टेस्ट", "लिपिड प्रोफाइल", "कोलेस्ट्रॉल जांच", "अच्छा कोलेस्ट्रॉल", "खराब कोलेस्ट्रॉल", "ट्राइग्लिसराइड", "विटामिन D जांच", "विटामिन B12 जांच", "कैल्शियम जांच", "आयरन जांच", "फेरिटिन जांच", "पेशाब जांच", "पेशाब सामान्य जांच", "पेशाब माइक्रोस्कोपी", "पेशाब कल्चर", "मल जांच", "मल सामान्य जांच", "मल कल्चर", "वीर्य जांच", "प्रेग्नेंसी टेस्ट", "बीटा HCG", "डेंगू जांच", "NS1 टेस्ट", "डेंगू IgG", "डेंगू IgM", "मलेरिया जांच", "एमपी टेस्ट", "टाइफाइड जांच", "विडाल टेस्ट", "कोविड जांच", "आरटी पीसीआर", "रैपिड टेस्ट", "टीबी जांच", "बलगम जांच", "मैन्टॉक्स टेस्ट", "एचआईवी जांच", "हेपेटाइटिस B जांच", "हेपेटाइटिस C जांच", "VDRL जांच", "सीआरपी टेस्ट", "डी डाइमर", "प्रोकैल्सीटोनिन", "ANA टेस्ट", "रूमेटाइड फैक्टर", "ANA प्रोफाइल", "एलर्जी जांच", "IgE जांच", "हार्मोन जांच", "टेस्टोस्टेरोन जांच", "एस्ट्रोजन जांच", "प्रोजेस्टेरोन जांच", "प्रोलैक्टिन जांच", "AMH टेस्ट", "PSA जांच", "ब्लड कल्चर", "कल्चर सेंसिटिविटी", "बायोप्सी", "हिस्टोपैथोलॉजी", "एफएनएसी", "पैप स्मीयर", "HPV टेस्ट",
+            "khoon ki jaanch", "blood test karwana hai", "sugar check karni hai", "sugar test", "thyroid test", "thyroid ki jaanch", "cbc test", "hemoglobin test", "khoon ki kami ka test", "dengue test", "malaria test", "typhoid test", "bukhar ka test", "viral fever ka test", "pregnancy test", "peshab ki jaanch", "urine test", "stool test", "potty test", "kidney test", "liver test", "cholesterol test", "vitamin d test", "vitamin b12 test", "full body checkup", "health package", "lab test near me", "pathology near me", "blood collection at home", "home sample collection", "cbc report", "sugar report", "thyroid report", "kidney report", "liver report", "medical report", "lab report", "blood report", "test report download", "pregnancy blood test", "iron test", "calcium test", "hiv test", "hepatitis test", "cancer biopsy", "fnac karwana hai", "biopsy report", "pap smear test", "best pathology lab", "diagnostic centre", "sample collection", "home blood collection", "health checkup package", "executive health checkup", "annual health checkup", "senior citizen health package", "women's health package", "men's health package", "child health package", "diabetes profile", "fever profile", "infection profile", "vitamin profile", "liver profile", "kidney profile", "heart profile", "pcos profile", "fertility profile", "khoon ki jaanch kahan hogi", "full body checkup near me", "vitamin test", "blood test karwana hai", "hba1c test", "sgot", "sgpt", "bilirubin test", "vitamin d3", "vitamin b12", "mal ki jaanch", "pet kharab test", "dust allergy test", "skin allergy test", "शरीर की पूरी जांच", "पूरा शरीर टेस्ट", "हेल्थ चेकअप", "खून की कमी का टेस्ट", "विटामिन की जांच", "थायराइड की जांच", "लिवर टेस्ट", "मल की जांच", "स्टूल टेस्ट", "शुगर की जांच", "शुगर की जांच करवानी है", "खून की जांच कहाँ होगी", "पूरा बॉडी चेकअप", "थायराइड टेस्ट करवाना है", "ब्लड टेस्ट करवाना है", "एलर्जी टेस्ट", "धूल की एलर्जी टेस्ट", "स्किन एलर्जी टेस्ट"
+          ],
+          neuro: [
+            "brain", "spine", "neuro", "nerve", "neurologist", "neurosurgeon", "disc", "back pain", "paralysis", "stroke", "migraine", "headache", "seizure", "dimag", "nas", "nass", "lakwa", "lakva", "daura", "sir dard", "sar dard", "दिमाग", "मस्तिष्क", "नस", "लकवा", "दौरा", "मिर्गी", "सिरदर्द",
+            "neurologist", "neuro doctor", "brain specialist", "nerve specialist", "brain disease", "nerve disease", "headache", "severe headache", "chronic headache", "migraine", "one side headache", "forehead pain", "back side headache", "neck pain", "neck stiffness", "dizziness", "vertigo", "loss of balance", "fainting", "unconsciousness", "blackout", "seizure", "epilepsy", "fits", "convulsions", "tremors", "hand tremor", "leg tremor", "parkinson's disease", "parkinson", "memory loss", "forgetfulness", "dementia", "alzheimer's disease", "alzheimer", "stroke", "brain stroke", "paralysis", "facial paralysis", "bell's palsy", "bells palsy", "weakness in arm", "weakness in leg", "numbness", "tingling", "burning sensation", "loss of sensation", "neuropathy", "diabetic neuropathy", "sciatica", "sciatica pain", "facial pain", "trigeminal neuralgia", "face nerve pain", "brain tumor", "brain infection", "meningitis", "encephalitis", "multiple sclerosis", "muscle weakness", "difficulty walking", "difficulty standing", "difficulty speaking", "slurred speech", "speech problem", "difficulty swallowing", "vision problem", "double vision", "blurred vision", "sleep disorder", "insomnia", "excessive sleep", "restless legs syndrome", "muscle spasm", "muscle twitching", "loss of coordination", "brain mri", "brain ct scan", "eeg", "emg", "ncv test", "nerve conduction study", "lumbar puncture", "neuro checkup", "brain checkup", "head injury", "brain injury", "concussion", "brain surgery", "spine surgery", "neuro surgery", "neurosurgeon", "brain operation", "spine specialist", "spine doctor", "nerve pain", "pinched nerve", "brain hemorrhage", "brain clot", "frequent falls", "difficulty holding things", "hand weakness", "foot drop", "facial numbness", "confusion", "sudden memory loss", "personality changes", "difficulty concentrating", "brain fog",
+            "न्यूरोलॉजिस्ट", "दिमाग के डॉक्टर", "मस्तिष्क विशेषज्ञ", "नसों के डॉक्टर", "दिमाग की बीमारी", "नसों की बीमारी", "सिर दर्द", "तेज सिर दर्द", "लगातार सिर दर्द", "माइग्रेन", "आधे सिर में दर्द", "माथे में दर्द", "सिर के पीछे दर्द", "गर्दन दर्द", "गर्दन अकड़ना", "चक्कर आना", "घूमने जैसा चक्कर", "संतुलन बिगड़ना", "बेहोश होना", "होश खो देना", "आंखों के आगे अंधेरा", "दौरा", "मिर्गी", "झटके आना", "शरीर में झटके", "हाथ कांपना", "हाथ में कंपन", "पैर कांपना", "पार्किंसन रोग", "याददाश्त कम होना", "भूलना", "डिमेंशिया", "अल्जाइमर", "स्ट्रोक", "ब्रेन स्ट्रोक", "लकवा", "चेहरे का लकवा", "बेल्स पाल्सी", "हाथ में कमजोरी", "पैर में कमजोरी", "सुन्नपन", "झुनझुनी", "जलन महसूस होना", "महसूस न होना", "नसों की कमजोरी", "साइटिका", "साइटिका दर्द", "चेहरे में दर्द", "चेहरे की नस का दर्द", "ब्रेन ट्यूमर", "दिमाग का संक्रमण", "मेनिनजाइटिस", "एन्सेफलाइटिस", "मल्टीपल स्क्लेरोसिस", "मांसपेशियों की कमजोरी", "चलने में दिक्कत", "खड़े होने में दिक्कत", "बोलने में दिक्कत", "तुतलाकर बोलना", "बोलने की समस्या", "निगलने में दिक्कत", "नजर की समस्या", "दो-दो दिखना", "धुंधला दिखना", "नींद की समस्या", "अनिद्रा", "ज्यादा नींद", "पैरों में बेचैनी", "मांसपेशी में ऐंठन", "मांसपेशी फड़कना", "तालमेल बिगड़ना", "ब्रेन एमआरआई", "ब्रेन सीटी स्कैन", "ईईजी", "ईएमजी", "एनसीवी टेस्ट", "नस जांच", "रीढ़ की जांच", "न्यूरो जांच", "दिमाग की जांच", "सिर में चोट", "दिमाग में चोट", "ब्रेन सर्जरी", "रीढ़ की सर्जरी", "न्यूरो सर्जरी", "न्यूरो सर्जन", "दिमाग का ऑपरेशन", "रीढ़ विशेषज्ञ", "रीढ़ के डॉक्टर", "नसों में दर्द", "नस दबना", "ब्रेन हैमरेज", "दिमाग में खून का थक्का", "बार-बार गिरना", "चीज पकड़ने में दिक्कत", "हाथ कमजोर", "पैर उठाने में दिक्कत", "चेहरा सुन्न", "भ्रम", "अचानक याददाश्त जाना", "व्यवहार बदलना", "ध्यान नहीं लगना", "दिमाग ठीक से काम नहीं कर रहा",
+            "sir mein bahut dard ho raha hai", "sir dard ka ilaj", "aadhe sir mein dard", "migraine ka treatment", "chakkar aa rahe hain", "bar bar chakkar aa rahe hain", "ghoomne jaisa lag raha hai", "haath kaap rahe hain", "pair kaap rahe hain", "haath sunn ho gaya", "pair sunn ho gaya", "haath mein jhunjhuni", "pair mein jhunjhuni", "lakwa maar gaya", "chehra tedha ho gaya", "muh tedha ho gaya", "bolne mein dikkat ho rahi hai", "yaadash kam ho gayi", "sab bhool jata hu", "mirgi ka daura", "daure padte hain", "brain stroke ke lakshan", "brain mri karwani hai", "eeg test", "ncv test", "emg test", "brain doctor", "neuro doctor", "neurosurgeon", "spine doctor", "gardan ki nas dab gayi", "naso mein dard hai", "sciatica ka ilaj", "pair mein current jaisa lagta hai", "brain tumor ke symptoms", "bar bar gir jata hu", "chalne mein dikkat hoti hai", "haath mein taqat nahi hai", "pair mein taqat nahi hai", "brain checkup", "sir ki mri", "brain operation doctor", "spine specialist near me", "best neurologist", "dimaag ke doctor", "naso ke doctor", "sir ke doctor", "gardan ki problem", "haath pair sun pad jate hain", "dimag kam karta hai", "dhyan nahi lagta", "dimag ki bimari", "brain infection", "memory loss doctor"
+          ],
+          ortho: [
+            "joint", "joint pain", "bone", "fracture", "orthopedics", "knee", "hip", "arthritis", "ligament", "sprain", "ortho", "haddi", "haddiyan", "jod", "ghutna", "kamar dard", "peeth dard", "chot", "perr m dard", "pair m dard", "हड्डी", "हड्डियां", "जोड़", "जोड़ों का दर्द", "घुटने", "गठिया", "मोच", "टूटना", "shoulder pain", "neck pain", "backache", "back ache", "body pain", "bodyache", "kamar me dard", "gardan me dard", "gardan dard", "jodo me dard", "jodon ka dard",
+            "orthopedic doctor", "bone specialist", "joint specialist", "spine specialist", "fracture specialist", "bone doctor", "bone pain", "body pain", "muscle pain", "bone weakness", "knee pain", "both knees pain", "knee swelling", "knee injury", "knee locking", "knee stiffness", "difficulty walking", "leg pain", "both legs pain", "foot pain", "heel pain", "heel spur", "ankle pain", "ankle sprain", "foot swelling", "leg swelling", "hip pain", "hip joint pain", "pelvic pain", "back pain", "lower back pain", "upper back pain", "middle back pain", "severe back pain", "chronic back pain", "neck stiffness", "frozen shoulder", "shoulder injury", "elbow pain", "tennis elbow", "golfer's elbow", "golfer elbow", "wrist pain", "hand pain", "finger pain", "thumb pain", "finger swelling", "hand swelling", "muscle weakness", "muscle cramps", "muscle tear", "ligament tear", "acl tear", "meniscus tear", "tendon injury", "strain", "fracture", "bone crack", "broken hand", "broken leg", "broken finger", "broken collar bone", "broken wrist", "broken ankle", "slip disc", "disc bulge", "sciatica", "nerve compression", "pinched nerve", "osteoarthritis", "rheumatoid arthritis", "gout", "osteoporosis", "cervical spondylosis", "lumbar spondylosis", "scoliosis", "kyphosis", "flat foot", "club foot", "carpal tunnel syndrome", "carpal tunnel", "trigger finger", "bone infection", "osteomyelitis", "bone tumor", "bone cancer", "calcium deficiency", "vitamin d deficiency", "bone density test", "x-ray", "mri", "ct scan", "bone scan", "joint replacement", "knee replacement", "hip replacement", "arthroscopy", "physiotherapy", "bone surgery", "spine surgery", "fracture surgery", "plaster", "cast removal", "walking stick", "walker", "knee brace", "back belt", "neck collar",
+            "हड्डी रोग विशेषज्ञ", "हड्डी के डॉक्टर", "जोड़ों के डॉक्टर", "रीढ़ विशेषज्ञ", "फ्रैक्चर डॉक्टर", "हड्डी डॉक्टर", "हड्डी में दर्द", "जोड़ों में दर्द", "पूरे शरीर में दर्द", "मांसपेशियों में दर्द", "हड्डियां कमजोर", "घुटने में दर्द", "दोनों घुटनों में दर्द", "घुटना सूज गया", "घुटने में चोट", "घुटना लॉक हो जाता है", "घुटना अकड़ना", "चलने में दिक्कत", "पैर में दर्द", "दोनों पैरों में दर्द", "पैर के पंजे में दर्द", "एड़ी में दर्द", "एड़ी की हड्डी बढ़ना", "टखने में दर्द", "टखना मुड़ गया", "पैर सूज गया", "पैर में सूजन", "कूल्हे में दर्द", "हिप जॉइंट दर्द", "पेल्विक दर्द", "कमर दर्द", "कमर के नीचे दर्द", "पीठ में दर्द", "बीच पीठ दर्द", "तेज कमर दर्द", "पुराना कमर दर्द", "गर्दन दर्द", "गर्दन अकड़ गई", "कंधे में दर्द", "फ्रोजन शोल्डर", "कंधे में चोट", "कोहनी में दर्द", "टेनिस एल्बो", "गोल्फर एल्बो", "कलाई में दर्द", "हाथ में दर्द", "उंगली में दर्द", "अंगूठे में दर्द", "उंगली सूजना", "हाथ सूज गया", "मांसपेशियों की कमजोरी", "मांसपेशी में ऐंठन", "मांसपेशी फटना", "लिगामेंट फटना", "ACL फटना", "मेनिस्कस चोट", "टेंडन चोट", "मोच", "खिंचाव", "हड्डी टूटना", "हड्डी में दरार", "हाथ टूट गया", "पैर टूट गया", "उंगली टूट गई", "कॉलर बोन टूटना", "कलाई टूट गई", "टखना टूट गया", "स्लिप डिस्क", "डिस्क निकल गई", "साइटिका", "नस दब गई", "नस दबना", "ऑस्टियोआर्थराइटिस", "गठिया", "रूमेटाइड गठिया", "यूरिक एसिड गठिया", "हड्डी कमजोर", "सर्वाइकल स्पॉन्डिलाइटिस", "कमर स्पॉन्डिलाइटिस", "रीढ़ टेढ़ी", "पीठ झुकना", "फ्लैट फुट", "टेढ़ा पैर", "हाथ की नस दबना", "उंगली लॉक होना", "हड्डी संक्रमण", "ऑस्टियोमायलाइटिस", "हड्डी की गांठ", "हड्डी का कैंसर", "कैल्शियम की कमी", "विटामिन D की कमी", "बोन डेंसिटी टेस्ट", "एक्स-रे", "एमआरआई", "सीटी स्कैन", "बोन स्कैन", "जोड़ बदलना", "घुटना बदलना", "हिप बदलना", "आर्थ्रोस्कोपी", "फिजियोथेरेपी", "हड्डी ऑपरेशन", "रीढ़ ऑपरेशन", "फ्रैक्चर ऑपरेशन", "प्लास्टर", "प्लास्टर हटाना", "छड़ी", "वॉकर", "नी ब्रेस", "कमर बेल्ट", "नेक कॉलर",
+            "pair me dard ho raha hai", "dono pair dard kar rahe hain", "pair me sujan hai", "pair uth nahi raha", "pair me current lagta hai", "pair sunn ho gaya", "pair me jalan hai", "pair me khinchav hai", "pair ki haddi toot gayi", "pair mud gaya", "pair fisal gaya", "ghutne me dard", "ghutna suj gaya", "ghutna lock ho jata hai", "seedhi chadhte dard hota hai", "uthte baithte ghutna dard karta hai", "kamar dard", "kamar toot rahi hai", "jhuk nahi pa raha hu", "seedha khada nahi ho pa raha", "bed se uthte dard hota hai", "gardan me dard", "gardan ghum nahi rahi", "kandhe me dard", "haath upar nahi uth raha", "kohni me dard", "kalai me dard", "ungli tedhi ho gayi", "haath me sujan", "haath ki haddi toot gayi", "haddi me dard", "haddi kamzor ho gayi", "gathiya ka ilaj", "slip disc ka ilaj", "sciatica ka ilaj", "naso me dard", "chalne me dikkat", "langda kar chal raha hu", "pair me jaan nahi hai", "seedhi nahi chadh pa raha", "gir gaya hu", "fracture doctor", "bone doctor", "haddi doctor", "orthopedic doctor", "joint replacement", "knee replacement", "hip replacement", "x-ray karwana hai", "mri karwani hai", "plaster karwana hai", "physiotherapy doctor", "back pain doctor", "spine specialist", "bone specialist near me", "ghutne ke doctor", "kamar ke doctor", "haddi ke doctor"
+          ],
+          derma: [
+            "skin", "acne", "pimples", "dermatologist", "hair fall", "melasma", "psoriasis", "rash", "itching", "eczema", "hair loss", "chamdi", "daane", "pimpal", "khujli", "chakte", "allargy", "त्वचा", "चमड़ी", "मुहासे", "खुजली", "चकत्ते", "बाल झड़ना", "एलर्जी",
+            "skin doctor", "dermatologist", "skin specialist", "skin problem", "skin disease", "skin infection", "skin allergy", "skin rash", "red rash", "severe itching", "burning skin", "dry skin", "oily skin", "sensitive skin", "skin peeling", "cracked skin", "skin irritation", "skin redness", "swollen skin", "skin discoloration", "white patches", "vitiligo", "leucoderma", "black spots", "dark spots", "pigmentation", "hyperpigmentation", "melasma", "tanning", "sunburn", "sun allergy", "pimples", "acne", "acne marks", "acne scar", "blackheads", "whiteheads", "large pores", "boils", "abscess", "fungal infection", "ringworm", "athlete's foot", "jock itch", "nail fungus", "eczema", "psoriasis", "dermatitis", "contact dermatitis", "seborrheic dermatitis", "hives", "urticaria", "skin blisters", "corn", "callus", "warts", "skin tag", "mole", "birthmark", "lipoma", "cyst", "sebaceous cyst", "skin cancer", "hair fall", "excess hair fall", "hair thinning", "baldness", "male pattern baldness", "female hair loss", "alopecia", "alopecia areata", "patchy hair loss", "dandruff", "dry scalp", "oily scalp", "scalp infection", "head lice", "hair transplant", "prp therapy", "hair mesotherapy", "mesotherapy", "nail problem", "nail infection", "ingrown nail", "brittle nails", "nail discoloration", "skin biopsy", "allergy test", "skin treatment", "hair treatment", "laser treatment", "laser hair removal", "chemical peel", "microdermabrasion", "botox", "fillers", "anti aging", "wrinkles", "fine lines", "open pores", "uneven skin tone", "glowing skin", "skin whitening", "face pigmentation", "face allergy", "face rash", "neck pigmentation", "underarm pigmentation", "elbow darkness", "knee darkness", "stretch marks", "cellulite", "excess sweating", "body odor",
+            "त्वचा रोग विशेषज्ञ", "त्वचा विशेषज्ञ", "स्किन स्पेशलिस्ट", "त्वचा की समस्या", "त्वचा रोग", "त्वचा संक्रमण", "त्वचा एलर्जी", "त्वचा पर दाने", "लाल दाने", "बहुत खुजली", "त्वचा में जलन", "रूखी त्वचा", "तैलीय त्वचा", "संवेदनशील त्वचा", "त्वचा छिलना", "त्वचा फटना", "त्वचा लाल होना", "त्वचा सूजना", "त्वचा का रंग बदलना", "सफेद दाग", "विटिलिगो", "काले धब्बे", "काले निशान", "पिग्मेंटेशन", "मेलाज्मा", "त्वचा का काला पड़ना", "धूप से जलना", "धूप से एलर्जी", "पिंपल", "मुंहासे", "मुंहासों के दाग", "पिंपल के निशान", "ब्लैकहेड्स", "व्हाइटहेड्स", "बड़े रोमछिद्र", "फोड़े", "पस वाली गांठ", "फंगल संक्रमण", "दाद", "पैरों में फंगल इंफेक्शन", "जांघ में दाद", "नाखून फंगल", "एक्जिमा", "सोरायसिस", "डर्मेटाइटिस", "एलर्जी वाली खुजली", "डैंड्रफ वाली त्वचा", "पित्ती", "अर्टिकेरिया", "फफोले", "कॉर्न", "कठोर त्वचा", "मस्सा", "स्किन टैग", "तिल", "जन्म का निशान", "चर्बी की गांठ", "सिस्ट", "तैलीय गांठ", "त्वचा कैंसर", "बाल झड़ना", "ज्यादा बाल झड़ना", "बाल पतले होना", "गंजापन", "पुरुष गंजापन", "महिलाओं में बाल झड़ना", "एलोपेसिया", "जगह-जगह बाल उड़ना", "डैंड्रफ", "सूखी स्कैल्प", "तैलीय स्कैल्प", "सिर की त्वचा संक्रमण", "जूं", "हेयर ट्रांसप्लांट", "पीआरपी थेरेपी", "मेसोथेरेपी", "नाखून की समस्या", "नाखून संक्रमण", "नाखून अंदर घुसना", "नाखून टूटना", "नाखून का रंग बदलना", "त्वचा बायोप्सी", "एलर्जी टेस्ट", "त्वचा उपचार", "बालों का इलाज", "लेजर इलाज", "लेजर हेयर रिमूवल", "केमिकल पील", "माइक्रोडर्माब्रेशन", "बोटॉक्स", "फिलर्स", "एंटी एजिंग", "झुर्रियां", "महीन रेखाएं", "खुले रोमछिद्र", "असमान त्वचा रंग", "चमकदार त्वचा", "त्वचा निखार", "चेहरे पर दाग", "चेहरे की एलर्जी", "चेहरे पर दाने", "गर्दन काली होना", "बगल काली होना", "कोहनी काली", "घुटना काला", "स्ट्रेच मार्क्स", "सेल्युलाईट", "ज्यादा पसीना", "शरीर से बदबू",
+            "dust allergy test", "skin allergy test", "एलर्जी टेस्ट", "धूल की एलर्जी टेस्ट", "स्किन एलर्जी टेस्ट",
+            "mujhe bahut khujli ho rahi hai", "sharir me khujli ho rahi hai", "pure body me khujli", "skin allergy ho gayi", "skin lal ho gayi", "daane nikal aaye", "sharir par daane", "lal lal daane", "safed daag", "kale daag", "muh par daag", "face par daag", "face kala pad gaya", "garmi ke daane", "pasine ke daane", "dhoop se allergy", "dhoop me skin jal gayi", "pimples bahut ho rahe hain", "muhase ka ilaj", "pimple ke daag", "face pe nishan", "blackheads kaise hataye", "whiteheads", "skin oily hai", "skin dry ho gayi", "skin fat rahi hai", "skin utar rahi hai", "daad ho gaya", "khaj ho gayi", "ringworm ka ilaj", "fungal infection", "pair me daad", "jangh me khujli", "private part me khujli", "nail fungus", "nakhun kala ho gaya", "nakhun toot raha hai", "baal bahut jhad rahe hain", "hair fall treatment", "ganjapan", "hair transplant", "prp treatment", "dandruff bahut hai", "sir me khujli", "sir me daane", "sir me fungal infection", "joon ho gayi", "skin doctor", "skin specialist", "dermatologist near me", "hair doctor", "acne doctor", "vitiligo doctor", "psoriasis treatment", "eczema doctor", "allergy doctor", "laser treatment", "mole removal", "skin tag removal", "wart removal", "chemical peel", "glowing skin treatment", "face whitening", "pigmentation treatment", "neck kala ho gaya", "underarm kale ho gaye", "stretch marks treatment", "body itching doctor", "skin infection doctor"
+          ],
+          chest: [
+            "cough", "asthma", "chest", "lungs", "breathing difficulty", "breath", "pulmonologist", "copd", "tuberculosis", "tb", "pneumonia", "bronchitis", "khansi", "dama", "saans", "seene me dard", "chhati me dard", "खांसी", "दमा", "अस्थमा", "फेफड़े", "सांस फूलना", "टीबी", "निमोनिया", "सीना", "छाती",
+            "chest specialist", "pulmonologist", "lung specialist", "respiratory specialist", "respiratory doctor", "general chest doctor", "chest pain", "chest tightness", "chest heaviness", "chest burning", "pain while breathing", "breathlessness", "shortness of breath", "difficulty breathing", "fast breathing", "heavy breathing", "wheezing", "dry cough", "wet cough", "productive cough", "persistent cough", "night cough", "morning cough", "cough with blood", "blood in sputum", "mucus", "thick mucus", "green sputum", "yellow sputum", "white sputum", "coughing fits", "asthma", "asthma attack", "childhood asthma", "allergy", "dust allergy", "pollen allergy", "seasonal allergy", "smoke allergy", "copd", "chronic bronchitis", "bronchitis", "emphysema", "pulmonary fibrosis", "ild", "interstitial lung disease", "pleural effusion", "pneumothorax", "lung cancer", "sarcoidosis", "pulmonary hypertension", "pneumonia", "lung infection", "chest infection", "tuberculosis", "pulmonary tb", "mdr tb", "covid", "viral infection", "viral fever", "flu", "influenza", "sinus infection", "sleep apnea", "snoring", "loud snoring", "oxygen level", "low oxygen", "oxygen saturation", "spo2", "pulse oximeter", "nebulizer", "inhaler", "asthma pump", "spacer", "steam inhalation", "chest x-ray", "hrct chest", "ct chest", "pulmonary function test", "pft", "spirometry", "bronchoscopy", "sputum test", "mantoux test", "tb test", "allergy test", "chest checkup", "lung checkup", "breathing problem", "smoker's lung", "smoking damage", "passive smoking", "nicotine addiction", "quit smoking", "chest physiotherapy", "lung rehabilitation",
+            "छाती रोग विशेषज्ञ", "फेफड़ों के डॉक्टर", "फेफड़ों के विशेषज्ञ", "श्वास रोग विशेषज्ञ", "चेस्ट डॉक्टर", "सीने में दर्द", "सीने में जकड़न", "सीना भारी लगना", "सीने में जलन", "सांस लेते समय दर्द", "सांस फूलना", "सांस लेने में दिक्कत", "सांस लेने में परेशानी", "तेज सांस चलना", "भारी सांस", "सांस में सीटी की आवाज", "सूखी खांसी", "बलगम वाली खांसी", "बलगम निकलना", "लगातार खांसी", "रात में खांसी", "सुबह खांसी", "खून वाली खांसी", "बलगम में खून", "बलगम", "गाढ़ा बलगम", "हरा बलगम", "पीला बलगम", "सफेद बलगम", "खांसी के दौरे", "अस्थमा", "अस्थमा का दौरा", "बच्चों का अस्थमा", "एलर्जी", "धूल से एलर्जी", "पराग एलर्जी", "मौसमी एलर्जी", "धुएं से एलर्जी", "सीओपीडी", "क्रोनिक ब्रोंकाइटिस", "ब्रोंकाइटिस", "एम्फायसीमा", "फेफड़ों में फाइब्रोसिस", "इंटरस्टिशियल लंग डिजीज", "फेफड़ों में पानी", "फेफड़ा बैठ जाना", "फेफड़ों का कैंसर", "सार्कोइडोसिस", "फेफडों का हाई बीपी", "निमोनिया", "फेफड़ों का संक्रमण", "छाती का संक्रमण", "तपेदिक", "फेफडों की टीबी", "दवा प्रतिरोधी टीबी", "कोविड", "वायरल संक्रमण", "वायरल बुखार", "फ्लू", "इन्फ्लुएंजा", "साइनस संक्रमण", "नींद में सांस रुकना", "खर्राटे", "तेज खर्राटे", "ऑक्सीजन लेवल", "ऑक्सीजन कम होना", "ऑक्सीजन सैचुरेशन", "ऑक्सीमीटर", "नेबुलाइज़र", "इनहेलर", "अस्थमा पंप", "स्पेसर", "भाप लेना", "छाती का एक्सरे", "एचआरसीटी चेस्ट", "सीटी चेस्ट", "फेफड़ों की क्षमता जांच", "स्पाइरोमेट्री", "ब्रोंकोस्कोपी", "बलगम जांच", "मैन्टॉक्स टेस्ट", "टीबी जांच", "एलर्जी टेस्ट", "छाती की जांच", "फेफड़ों की जांच", "सांस की समस्या", "धूम्रपान से फेफड़े खराब", "धूम्रपान से नुकसान", "परोक्ष धूम्रपान", "निकोटीन की लत", "धूम्रपान छोड़ना", "चेस्ट फिजियोथेरेपी", "फेफडों की पुनर्वास",
+            "mujhe saans lene me dikkat ho rahi hai", "saans phool rahi hai", "saans ruk ruk ke aa rahi hai", "saans tez chal rahi hai", "seene me dard hai", "seena bhaari lag raha hai", "seene me jalan hai", "seene me dabaav lag raha hai", "khansi band nahi ho rahi", "bahut khansi aa rahi hai", "sukhi khansi", "balgam wali khansi", "gale me balgam jama hai", "balgam bahar nahi aa raha", "khansi me khoon aa raha hai", "bukhar ke sath khansi hai", "raat me khansi badh jati hai", "subah bahut khansi aati hai", "seeti jaisi awaz aati hai", "allergy ho gayi hai", "dhool se allergy hai", "mausam badalte hi khansi ho jati hai", "asthma ka ilaj", "asthma doctor", "inhaler use kaise kare", "pump se fayda nahi ho raha", "nebulizer karwana hai", "tb ke lakshan", "tb test", "tb doctor", "fefdo me infection hai", "fefdo me pani bhar gaya", "fefdo ka doctor", "chest doctor", "lung specialist", "pulmonologist near me", "chest x-ray karwana hai", "hrct chest", "pft test", "spirometry test", "oxygen level kam hai", "spo2 kam ho gaya", "kharate bahut aate hain", "neend me saans ruk jati hai", "smoking ki wajah se khansi", "cigarette chodne ka ilaj", "dum ghut raha hai", "gehri saans nahi le pa raha", "jaldi thak jata hu", "seedhi chadhte saans phoolti hai", "chalne par saans phoolti hai", "balgam me khoon aa raha hai", "chest infection doctor", "allergy specialist", "breathing problem doctor"
+          ],
+          medicine: [
+            "fever", "khoon ki kami", "blood deficiency", "blood problem", "RBC ki kami", "WBC ki kami", "platelets", "haemoglobin", "cold", "diabetes", "stomach", "physician", "internal medicine", "blood pressure", "bp", "weakness", "infection", "bukhar", "bokhar", "sardi jukam", "sugar", "kamjori", "dengue", "dengu", "pet dard", "pet me dard", "बुखार", "सर्दी", "जुकाम", "मधुमेह", "शुगर", "बीपी", "कमजोरी", "डेंगू", "मलेरिया", "टायफाइड", "पेट दर्द", "geriatric", "geriatrics", "senior citizen", "old age", "bujurg", "budhape", "elderly", "malaria", "jaundice", "typhoid", "viral", "flu", "piliya", "vomit", "vomiting", "constipation", "diarrhea", "peela peshab", "piliya disease", "पीलिया", "मलेरिया", "टायफाइड",
+            "sugar test", "diabetes test", "hba1c test", "hb1ac test", "fasting sugar", "pp sugar", "bukhar ka test", "dengue test", "malaria test", "typhoid test", "covid test", "tb test", "viral test", "tuberculosis test", "viral infection test", "fever investigation", "general health test", "sugar test karwana hai", "dengue test karwana hai", "malaria test karwana hai",
+            "शुगर टेस्ट", "शुगर की जांच", "फास्टिंग शुगर", "खाना खाने के बाद शुगर", "hba1c टेस्ट", "डायबिटीज टेस्ट", "बुखार का टेस्ट", "कमजोरी का टेस्ट", "डेंगू टेस्ट कितने का है", "मलेरिया टेस्ट कहाँ होगा", "बुखार का कौन सा टेस्ट होता है", "डेंगू टेस्ट", "मलेरिया टेस्ट", "टाइफाइड टेस्ट", "कोविड टेस्ट", "टीबी टेस्ट", "वायरल टेस्ट", "पेट खराब का टेस्ट", "डायबिटीज टेस्ट"
+          ],
+          surgery: [
+            "surgery", "surgeon", "laparoscopic", "gallstone", "gallstones", "hernia", "appendicitis", "appendix", "piles", "fissure", "fistula", "breast surgery", "operation", "pathri", "bawasir", "cheera", "cut", "ऑपरेशन", "सर्जरी", "पित्त की पथरी", "हर्निया", "अपेंडिक्स", "बवासीर",
+            "general surgeon", "surgery doctor", "surgeon", "operation", "operation doctor", "hernia", "inguinal hernia", "umbilical hernia", "incisional hernia", "hernia operation", "hernia surgery", "appendix", "appendicitis", "appendix pain", "appendix operation", "gallbladder stone", "gall stone", "gallbladder pain", "gallbladder surgery", "laparoscopic surgery", "laser surgery", "open surgery", "minimally invasive surgery", "piles", "hemorrhoids", "bleeding piles", "internal piles", "external piles", "piles operation", "fissure", "anal fissure", "fissure pain", "fistula", "anal fistula", "fistula surgery", "pilonidal sinus", "pilonidal cyst", "abscess", "pus collection", "boil", "lump", "swelling", "lipoma", "sebaceous cyst", "cyst removal", "breast lump", "breast surgery", "thyroid lump", "thyroid surgery", "goiter", "varicose veins", "leg veins", "varicose surgery", "hydrocele", "hydrocele surgery", "circumcision", "phimosis", "nail surgery", "ingrown toenail", "diabetic foot", "foot ulcer", "non healing wound", "wound dressing", "burn injury", "burn treatment", "burn dressing", "skin grafting", "trauma", "accident injury", "cut injury", "deep cut", "stitches", "sutures", "stitch removal", "foreign body removal", "emergency surgery", "abdominal pain", "acute abdomen", "intestinal obstruction", "bowel obstruction", "colon surgery", "small intestine surgery", "stomach surgery", "gastric perforation", "peritonitis", "splenectomy", "spleen injury", "liver surgery", "pancreatic surgery", "biopsy", "fnac", "endoscopy", "colonoscopy", "minor surgery", "major surgery", "surgical consultation", "surgical dressing", "laparoscopic cholecystectomy", "laparoscopic hernia", "laparoscopic appendix", "mastectomy", "lumpectomy", "bariatric surgery", "weight loss surgery", "colostomy", "stoma surgery",
+            "जनरल सर्जन", "सर्जरी डॉक्टर", "सर्जन", "ऑपरेशन करवाना है", "ऑपरेशन डॉक्टर", "हर्निया", "कमर का हर्निया", "नाभि का हर्निया", "ऑपरेशन के बाद हर्निया", "हर्निया ऑपरेशन", "अपेंडिक्स", "अपेंडिक्स की सूजन", "अपेंडिक्स दर्द", "अपेंडिक्स ऑपरेशन", "पित्ताशय की पथरी", "पित्त की पथरी", "पित्ताशय दर्द", "पित्ताशय ऑपरेशन", "लैप्रोस्कोपिक सर्जरी", "लेजर सर्जरी", "ओपन सर्जरी", "छोटी चीरे वाली सर्जरी", "बवासीर", "खून वाली बवासीर", "अंदरूनी बवासीर", "बाहरी बवासीर", "बवासीर ऑपरेशन", "फिशर", "गुदा में कट", "मलद्वार दर्द", "भगंदर", "गुदा भगंदर", "भगंदर ऑपरेशन", "पिलोनाइडल साइनस", "रीढ़ के पास गांठ", "फोड़ा", "पस भरना", "फुंसी", "गांठ", "सूजन", "चर्बी की गांठ", "तैलीय गांठ", "गांठ निकालना", "स्तन की गांठ", "स्तन ऑपरेशन", "थायराइड गांठ", "थायराइड ऑपरेशन", "घेंघा", "वैरिकोज वेन्स", "पैरों की नस फूलना", "नस ऑपरेशन", "हाइड्रोसील", "हाइड्रोसील ऑपरेशन", "खतना", "फिमोसिस", "नाखून ऑपरेशन", "नाखून अंदर घुसना", "डायबिटिक फुट", "पैर का घाव", "घाव नहीं भर रहा", "घाव की ड्रेसिंग", "जलना", "जलने का इलाज", "जलने की ड्रेसिंग", "स्किन ग्राफ्टिंग", "चोट", "दुर्घटना चोट", "कट लगना", "गहरा कट", "टांके", "टांके लगना", "टांके कटवाना", "शरीर से चीज निकालना", "इमरजेंसी ऑपरेशन", "पेट दर्द", "अचानक पेट दर्द", "आंत रुकना", "आंत बंद", "बड़ी आंत ऑपरेशन", "छोटी आंत ऑपरेशन", "पेट ऑपरेशन", "पेट में छेद", "पेट का संक्रमण", "तिल्ली निकालना", "तिल्ली में चोट", "लिवर ऑपरेशन", "अग्नाशय ऑपरेशन", "बायोप्सी", "एफएनएसी", "एंडोस्कोपी", "कोलोनोस्कोपी", "छोटी सर्जरी", "बड़ी सर्जरी", "सर्जरी सलाह", "सर्जिकल ड्रेसिंग",
+            "pet me bahut dard ho raha hai", "pet ke niche dard hai", "nabhi ke paas dard", "appendix ka dard", "appendix operation", "hernia ho gaya hai", "nabhi bahar aa gayi", "pet me sujan hai", "gallbladder stone", "pitt ki pathri", "pitt ki pathri ka operation", "piles ka ilaj", "bawasir ka operation", "bawasir se khoon aa raha hai", "fissure ka ilaj", "bhagandar ka ilaj", "maldwar me dard hai", "maldwar se khoon aa raha hai", "baithne me dard hota hai", "gaanth ho gayi hai", "charbi ki gaanth", "lipoma operation", "gaanth nikalwani hai", "phoda ho gaya hai", "phoda pak gaya hai", "pus nikal raha hai", "ghav bhar nahi raha", "dressing karwani hai", "jal gaya hu", "burn treatment", "tanke lagwane hain", "tanke katwane hain", "chot lag gayi hai", "accident ho gaya", "pair me ghav hai", "sugar ka ghav", "diabetic foot", "hydrocele operation", "khatna karwana hai", "varicose veins ka ilaj", "pair ki nas phool gayi", "laser surgery", "laparoscopic surgery", "chhota operation", "general surgeon", "surgery doctor", "operation doctor", "pet ke doctor", "best surgeon near me", "operation hospital", "endoscopy karwani hai", "colonoscopy karwani hai", "biopsy karwani hai", "fnac test", "pet ka operation", "emergency operation", "pathri ka operation", "pitt ki pathri", "bawasir ka operation", "bawasir ka ilaj", "hernia ka ilaj", "hernia operation", "appendix nikaalna", "operation karwana hai", "surgery karwani hai", "laparoscopic operation", "fissure ka ilaj", "bleeding bawasir", "piles bleeding", "pilonidal cyst", "thyroid operation", "gale ki gath ka operation", "breast ki ganth ka operation", "koi ganth hai body mein", "pet mein ganth", "general surgery", "surgeon near me", "best surgeon", "पित्त की पथरी का ऑपरेशन", "बवासीर में खून", "हर्निया का दर्द", "अपेंडिक्स में दर्द"
+          ],
+          urology: [
+            "urology", "urologist", "urinary", "urine", "kidney", "prostate", "kidney stone", "bladder", "renal", "peshab", "peshab me jalan", "peshab me dard", "mutra", "bar bar peshab aana", "पेशाब", "पेशाब में जलन", "किडनी", "किडनी की पथरी", "मूत्र",
+            "urologist", "urology doctor", "kidney specialist", "urine problem", "urinary problem", "urine infection", "uti", "burning urination", "pain while urinating", "difficulty urinating", "frequent urination", "urgent urination", "night urination", "less urine", "no urine", "urine retention", "urine leakage", "urinary incontinence", "blood in urine", "cloudy urine", "foul smelling urine", "dark urine", "foamy urine", "kidney stone", "stone pain", "ureter stone", "bladder stone", "kidney pain", "flank pain", "lower back pain", "severe kidney pain", "hydronephrosis", "kidney swelling", "kidney infection", "pyelonephritis", "kidney failure", "chronic kidney disease", "ckd", "acute kidney injury", "aki", "dialysis", "hemodialysis", "peritoneal dialysis", "kidney transplant", "enlarged prostate", "bph", "prostate problem", "prostate cancer", "psa test", "erectile dysfunction", "weak erection", "male infertility", "low sperm count", "semen analysis", "testicular pain", "testicular swelling", "varicocele", "hydrocele", "phimosis", "circumcision", "bladder infection", "overactive bladder", "urinary catheter", "kidney function test", "creatinine test", "urea test", "urine routine", "urine culture", "cystoscopy", "uroflowmetry", "kub ultrasound", "ncct kub", "lithotripsy", "pcnl", "ursl", "rirs", "kidney surgery", "bladder surgery", "ureter surgery", "renal calculi", "urinary tract infection", "prostatitis", "nephrotic syndrome", "ureteroscopy", "eswl", "kidney stone breaking", "azoospermia", "vasectomy", "undescended testis", "scrotal swelling",
+            "मूत्र रोग विशेषज्ञ", "यूरोलॉजी डॉक्टर", "किडनी विशेषज्ञ", "पेशाब की समस्या", "मूत्र समस्या", "पेशाब का संक्रमण", "यूरिन इन्फेक्शन", "पेशाब में जलन", "पेशाब करते समय दर्द", "पेशाब करने में दिक्कत", "बार-बार पेशाब आना", "अचानक पेशाब लगना", "रात में बार-बार पेशाब", "कम पेशाब आना", "पेशाब बंद होना", "पेशाब रुक जाना", "पेशाब निकल जाना", "पेशाब पर कंट्रोल न होना", "पेशाब में खून", "धुंधला पेशाब", "बदबूदार पेशाब", "गहरा पीला पेशाब", "झागदार पेशाब", "किडनी की पथरी", "पथरी का दर्द", "यूरेटर स्टोन", "मूत्राशय की पथरी", "किडनी में दर्द", "कमर के साइड में दर्द", "तेज किडनी दर्द", "किडनी में सूजन", "किडनी सूजना", "किडनी संक्रमण", "किडनी फेल होना", "पुरानी किडनी बीमारी", "डायलिसिस", "किडनी ट्रांसप्लांट", "बढ़ा हुआ प्रोस्टेट", "प्रोस्टेट बढ़ना", "प्रोस्टेट की समस्या", "प्रोस्टेट कैंसर", "पीएसए टेस्ट", "नपुंसकता", "इरेक्शन की समस्या", "पुरुष बांझपन", "शुक्राणु कम होना", "वीर्य जांच", "अंडकोष में दर्द", "अंडकोष में सूजन", "वैरिकोसील", "हाइड्रोसील", "फिमोसिस", "खतना", "मूत्राशय संक्रमण", "बार-बार पेशाब", "यूरिन कैथेटर", "किडनी जांच", "क्रिएटिनिन टेस्ट", "यूरिया टेस्ट", "पेशाब जांच", "यूरिन कल्चर", "सिस्टोस्कोपी", "यूरोफ्लोमेट्री", "किडनी अल्ट्रासाउंड", "स्टोन सीटी स्कैन", "पथरी तोड़ना", "पीसीएनएल", "यूआरएसएल", "आरआईआरएस", "किडनी ऑपरेशन", "ब्लैडर ऑपरेशन", "यूरेटर ऑपरेशन",
+            "kidney test", "peshab test", "peshab ki jaanch", "urine test", "kft test", "creatinine test", "urea test", "urine culture", "kidney function test", "blood urea", "urinalysis", "kidney test कहाँ होता है", "पेशाब की जांच करवानी है", "किडनी टेस्ट", "क्रिएटिनिन टेस्ट", "यूरिया टेस्ट", "पेशाब की जांच", "पेशाब टेस्ट", "यूरिन टेस्ट",
+            "peshab mein jalan hai", "bar bar peshab aa raha hai", "peshab nahi aa raha", "peshab mein khoon aa raha hai", "peshab ka rang badal gaya", "peshab rokna mushkil hai", "raat ko baar baar peshab", "kidney mein dard hai", "kidney stone hai", "pathri ka dard", "pathri nikaalwani hai", "pathri todwani hai", "dialysis karwani hai", "kidney transplant chahiye", "prostate problem hai", "peshab dhire aata hai", "peshab ki naali mein problem", "uti ka ilaj", "urine infection", "peshab mein infection", "best urologist", "kidney doctor", "kidney specialist near me", "kidney stone treatment", "urologist near me", "kidney problem ka ilaj", "pathri doctor",
+            "peshab me jalan ho rahi hai", "peshab karte waqt dard hota hai", "baar baar peshab aa raha hai", "raat me bahut peshab aata hai", "peshab ruk ruk ke aa raha hai", "peshab nahi aa raha", "peshab me khoon aa raha hai", "peshab pe control nahi hai", "kapdo me peshab nikal jata hai", "peshab se badbu aa rahi hai", "peshab ka rang peela hai", "peshab me jhaag aa raha hai", "kidney me dard hai", "kamar ke side me dard hai", "pathri ka dard", "kidney stone ka ilaj", "pathri nikalwani hai", "kidney doctor", "urologist near me", "kidney specialist", "dialysis doctor", "creatinine badh gaya hai", "urea badh gaya hai", "kidney fail ho gayi", "prostate ki problem hai", "prostate operation", "peshab ruk jata hai", "peshab ki nali me dard", "andkosh me dard", "andkosh suj gaya hai", "hydrocele operation", "varicocele treatment", "weak erection", "mardana kamzori", "sperm test", "sperm count kam hai", "baccha nahi ho raha", "male infertility doctor", "semen test", "kidney ultrasound", "stone operation", "laser stone surgery", "bladder infection", "urine infection doctor", "best urologist", "kidney hospital", "kidney transplant doctor", "urine test karwana hai", "psa test", "peshab ki problem doctor",
+            "किडनी की पथरी का दर्द", "पेशाब में जलन है", "बार-बार पेशाब आना", "किडनी में दर्द"
+          ],
+          ent: [
+            "anesthesia", "anaesthetic", "sedation", "ventilator", "icu", "critical care", "intensive care", "unconscious", "pain block", "numbness", "behoshi", "behosh", "sunn karna", "sun", "बेहोशी", "बेहोश", "सुन्न करना", "आईसीयू", "वेंटीलेटर",
+            "ent specialist", "ent doctor", "ear specialist", "nose specialist", "throat specialist", "ear nose throat", "ear problem", "ear pain", "ear infection", "ear swelling", "ear discharge", "ear pus", "ear bleeding", "hearing loss", "sudden hearing loss", "hearing problem", "hard of hearing", "deafness", "ear blockage", "ear wax", "ear cleaning", "ear wax removal", "ear ringing", "tinnitus", "buzzing sound", "ringing in ear", "buzzing in ear", "vertigo", "balance problem", "dizziness", "ear vertigo", "ear hole", "ear drum perforation", "eardrum perforation", "ear surgery", "mastoid surgery", "ear itching", "ear blocked", "nose block", "blocked nose", "runny nose", "watery nose", "sneezing", "continuous sneezing", "nose bleeding", "nose bleed", "nasal bleeding", "nasal allergy", "dust allergy", "pollen allergy", "sinus", "sinus infection", "sinus headache", "sinus pressure", "facial pain", "sinus problem", "sinusitis", "chronic sinusitis", "nasal polyps", "nasal polyp", "deviated septum", "dns", "nose fracture", "smell loss", "loss of smell", "bad smell in nose", "nasal congestion", "stuffy nose", "throat pain", "sore throat", "throat infection", "tonsils", "tonsillitis", "swollen tonsils", "difficulty swallowing", "pain while swallowing", "voice change", "hoarseness", "hoarse voice", "lost voice", "voice loss", "dry throat", "burning throat", "mouth breathing", "snoring", "sleep apnea", "bad breath", "mouth ulcers", "salivary gland swelling", "neck lump", "neck swelling", "thyroid swelling", "laryngitis", "pharyngitis", "epiglottitis", "vocal cord problem", "vocal cord nodule", "adenoids", "difficulty speaking", "lump in throat", "throat cancer", "head and neck", "salivary gland problem", "dry mouth", "mouth ulcer", "allergic rhinitis", "ent endoscopy", "nasal endoscopy", "audiometry", "hearing test", "tympanometry", "speech therapy", "cochlear implant", "hearing aid", "tonsil surgery", "adenoid surgery", "septoplasty", "fess surgery", "microlaryngeal surgery",
+            "ईएनटी विशेषज्ञ", "कान नाक गला डॉक्टर", "कान के डॉक्टर", "नाक के डॉक्टर", "गले के डॉक्टर", "कान में दर्द", "कान का संक्रमण", "कान सूजना", "कान से पानी आना", "कान से मवाद", "कान से खून", "सुनाई कम देना", "अचानक सुनाई बंद", "कान बंद होना", "कान का मैल", "कान की सफाई", "कान में आवाज आना", "कान में सीटी बजना", "भनभनाहट", "चक्कर", "संतुलन बिगड़ना", "चक्कर आना", "कान का पर्दा फटना", "कान का ऑपरेशन", "मास्टॉइड ऑपरेशन", "नाक बंद", "नाक बंद होना", "नाक बहना", "नाक से पानी", "छींक आना", "लगातार छींक", "नाक से खून", "नाक की एलर्जी", "धूल से एलर्जी", "पराग एलर्जी", "साइनस", "साइनस संक्रमण", "साइनस सिर दर्द", "चेहरे में दबाव", "चेहरे में दर्द", "नाक में मांस बढ़ना", "नाक की हड्डी टेढ़ी", "डीएनएस", "नाक टूटना", "सूंघने की शक्ति कम", "गंध नहीं आना", "नाक से बदबू", "गले में दर्द", "गला खराब", "गले का संक्रमण", "टॉन्सिल", "टॉन्सिल की सूजन", "टॉन्सिल सूजना", "निगलने में दिक्कत", "निगलते समय दर्द", "आवाज बदलना", "आवाज बैठना", "आवाज चली गई", "गला सूखना", "गले में जलन", "मुंह से सांस लेना", "खर्राटे", "नींद में सांस रुकना", "मुंह से बदबू", "मुंह के छाले", "लार ग्रंथि सूजन", "गर्दन में गांठ", "गर्दन सूजना", "थायराइड सूजन", "स्वरयंत्र की सूजन", "गले की सूजन", "एपिग्लॉटिस संक्रमण", "वोकल कॉर्ड समस्या", "वोकल कॉर्ड गांठ", "ईएनटी एंडोस्कोपी", "नाक एंडोस्कोपी", "सुनने की जांच", "सुनने का टेस्ट", "कान का प्रेशर टेस्ट", "स्पीच थेरेपी", "कॉक्लियर इम्प्लांट", "सुनने की मशीन", "टॉन्सिल ऑपरेशन", "एडेनॉइड ऑपरेशन", "नाक की हड्डी ऑपरेशन", "साइनस ऑपरेशन", "गले की सर्जरी",
+            "kaan me dard hai", "kaan se pani aa raha hai", "kaan se khoon aa raha hai", "kaan pak gaya hai", "kaan me mail jam gaya", "sunai kam de rahi hai", "sunai band ho gayi", "kaan me ghanti bajti hai", "kaan me seeti bajti hai", "chakkar aa rahe hain", "balance nahi ban raha", "naak band hai", "naak se pani aa raha hai", "baar baar chheenk aa rahi hai", "naak se khoon aa raha hai", "naak me maas aa gaya", "naak ki haddi tedhi hai", "sinus ki problem hai", "sir bhaari rehta hai", "chehre me dard hai", "gala dard kar raha hai", "gala baith gaya hai", "gala sukh raha hai", "gala me jalan hai", "gala me infection hai", "gala me sujan hai", "tonsil ho gaya", "tonsil ka operation", "nigalne me dard hota hai", "khana nigalne me dikkat", "aawaz baith gayi", "aawaz nahi nikal rahi", "muh se badbu aati hai", "muh ke chhale", "kharate bahut aate hain", "neend me saans ruk jati hai", "gardan me gaanth hai", "gardan suj gayi", "ent doctor", "kaan doctor", "naak doctor", "gala doctor", "best ent specialist", "hearing test", "audiometry test", "hearing machine", "hearing aid", "cochlear implant", "sinus operation", "naak ka operation", "tonsil operation", "fess surgery", "voice doctor", "speech therapy", "ear cleaning", "nose allergy doctor", "dust allergy treatment", "allergy specialist", "chheenk band nahi ho rahi", "kaan ki safai", "naak ka ilaj", "gala ka ilaj", "kaan mein dard hai", "kaan se pani aa raha hai", "kaan mein awaz aa rahi hai", "kaan mein seeti", "kaan band ho gaya", "sunai nahi de raha", "behrapan ho gaya", "naak se khoon aa raha hai", "naak beh rahi hai", "sinus mein dard", "saans lene mein dikkat", "nasal allergy", "kharchate aate hain", "gale mein dard hai", "gale mein infection", "tonsils badh gaye", "gale mein ganth hai", "bolne mein dikkat", "awaz nahi nikal rahi", "awaz baith gayi", "ent doctor near me", "kaan ke doctor", "naak ke doctor", "gale ke doctor", "tonsils ka operation", "adenoids ka operation", "sinusitis ka ilaj", "ear wax nikalna", "nasal polyp ka ilaj", "कान में दर्द है", "कान से पानी आ रहा है", "नाक से खून आ रहा है", "गले में दर्द है", "टॉन्सिल का डॉक्टर", "सुनाई नहीं देता"
+          ],
+          cardio: [
+            "heart", "cardio", "cardiologist", "angioplasty", "pacemaker", "heart attack", "heart failure", "heart blocker", "bypass surgery", "cardiac", "chest pain", "heart disease", "cardiology", "heart specialist", "palpitations",
+            "cardiologist", "heart doctor", "heart specialist", "heart disease", "heart problem", "chest pain", "left chest pain", "chest tightness", "chest pressure", "chest heaviness", "burning chest", "pain while walking", "pain while climbing stairs", "pain during exercise", "heart attack", "mild heart attack", "silent heart attack", "cardiac arrest", "angina", "coronary artery disease", "heart block", "blocked arteries", "heart failure", "congestive heart failure", "weak heart", "enlarged heart", "cardiomyopathy", "valve disease", "mitral valve disease", "aortic valve disease", "heart murmur", "high blood pressure", "hypertension", "low blood pressure", "bp problem", "bp fluctuation", "pulse rate", "fast heartbeat", "slow heartbeat", "irregular heartbeat", "palpitations", "racing heart", "skipped heartbeat", "arrhythmia", "atrial fibrillation", "tachycardia", "bradycardia", "dizziness", "fainting", "breathlessness", "difficulty breathing", "swollen legs", "swollen feet", "fatigue", "weakness", "excess sweating", "cold sweating", "pain in left arm", "pain in jaw", "neck pain", "back pain due to heart", "diabetes with heart disease", "cholesterol", "high cholesterol", "triglycerides", "hdl", "ldl", "heart checkup", "ecg", "electrocardiogram", "echo", "2d echo", "tmt test", "stress test", "holter monitoring", "angiography", "ct angiography", "coronary angiography", "angioplasty", "stent", "heart stent", "bypass surgery", "cabg", "pacemaker", "icd device", "heart surgery", "open heart surgery", "valve replacement", "heart rehabilitation", "blood thinner", "cardiac icu", "emergency cardiac care", "heart blockage symptoms", "heart attack symptoms", "mild heart attack symptoms", "heart failure symptoms", "heart valve disease", "heart enlargement", "high bp treatment", "low bp treatment", "fast pulse", "slow pulse", "chest pain causes", "heart checkup package", "executive cardiac checkup", "preventive heart screening", "family history of heart disease", "smoking and heart disease", "diabetes and heart disease", "cholesterol treatment", "heart healthy diet", "heart exercise", "cardiac rehabilitation", "heart emergency", "sudden chest pain", "sudden breathlessness", "heart monitoring", "blood pressure monitor", "home bp machine", "ecg at home", "heart screening",
+            "दिल", "धड़कन", "हृदय रोग विशेषज्ञ", "दिल के डॉक्टर", "हार्ट स्पेशलिस्ट", "हृदय रोग", "दिल की समस्या", "सीने में दर्द", "बाएं सीने में दर्द", "सीने में जकड़न", "सीने में दबाव", "सीना भारी लगना", "सीने में जलन", "चलने पर सीने में दर्द", "सीढ़ी चढ़ते दर्द", "एक्सरसाइज में दर्द", "हार्ट अटैक", "हल्का हार्ट अटैक", "साइलेंट हार्ट अटैक", "कार्डियक अरेस्ट", "एनजाइना", "हृदय की नसों में रुकावट", "हार्ट ब्लॉक", "दिल की नस ब्लॉक", "हार्ट फेलियर", "हार्ट की कमजोरी", "दिल कमजोर होना", "दिल बड़ा होना", "हार्ट मांसपेशी की बीमारी", "हार्ट वाल्व की बीमारी", "माइट्रल वाल्व समस्या", "एओर्टिक वाल्व समस्या", "दिल में आवाज", "हाई ब्लड प्रेशर", "उच्च रक्तचाप", "लो ब्लड प्रेशर", "ब्लड प्रेशर की समस्या", "बीपी ऊपर नीचे होना", "नाड़ी की गति", "दिल तेजी से धड़कना", "दिल धीरे धड़कना", "धड़कन अनियमित", "दिल की धड़कन महसूस होना", "दिल बहुत तेज चलना", "धड़कन छूटना", "अनियमित धड़कन", "एट्रियल फिब्रिलेशन", "तेज धड़कन", "धीमी धड़कन", "चक्कर आना", "बेहोश होना", "सांस फूलना", "सांस लेने में दिक्कत", "पैरों में सूजन", "पैरों के पंजे सूजना", "थकान", "कमजोरी", "ज्यादा पसीना", "ठंडा पसीना", "बाएं हाथ में दर्द", "जबड़े में दर्द", "गर्दन में दर्द", "पीठ में दिल का दर्द", "शुगर और दिल की बीमारी", "कोलेस्ट्रॉल", "कोलेस्ट्रॉल बढ़ना", "ट्राइग्लिसराइड", "अच्छा कोलेस्ट्रॉल", "खराब कोलेस्ट्रॉल", "दिल की जांच", "ईसीजी", "हृदय की जांच", "इको", "टू डी इको", "ट्रेडमिल टेस्ट", "स्ट्रेस टेस्ट", "24 घंटे ईसीजी", "एंजियोग्राफी", "सीटी एंजियोग्राफी", "दिल की नस जांच", "एंजियोप्लास्टी", "स्टेंट", "हार्ट स्टेंट", "बायपास सर्जरी", "सीएबीजी", "पेसमेकर", "आईसीडी", "हार्ट ऑपरेशन", "ओपन हार्ट सर्जरी", "वाल्व बदलना", "हार्ट रिहैब", "खून पतला करने की दवा", "कार्डियक आईसीयू", "आपातकालीन हृदय इलाज", "दिल का दौरा", "हृदय रोग विभाग", "दिल की बीमारी", "हार्ट विशेषज्ञ", "कार्डियोलॉजिस्ट", "दिल जोर से धड़क रहा है",
+            "seene me dard ho raha hai", "dil me dard ho raha hai", "dil ghabra raha hai", "dil bahut tez dhadak raha hai", "dhadkan tez chal rahi hai", "dhadkan dheere chal rahi hai", "dil ki dhadkan ruk ruk ke chal rahi hai", "dil ki dhadkan miss ho rahi hai", "bp high hai", "bp low hai", "bp check karwana hai", "seena bhaari lag raha hai", "seene me jalan hai", "saans phool rahi hai", "seedhi chadhte saans phoolti hai", "chalne par saans phoolti hai", "left side chest pain", "baaye haath me dard", "kandhe tak dard ja raha hai", "jabde me dard hai", "pasina bahut aa raha hai", "thanda pasina aa raha hai", "chakkar aa rahe hain", "behosh ho gaya tha", "pair suj gaye hain", "pairon me sujan hai", "dil kamzor ho gaya hai", "dil ki nas block hai", "heart blockage", "angiography karwani hai", "angioplasty karwani hai", "stent lagwana hai", "bypass operation", "heart operation", "ecg karwana hai", "echo test", "tmt test", "holter test", "heart checkup", "cholesterol badh gaya hai", "triglyceride badh gaya hai", "sugar aur bp dono hai", "dil ka doctor", "heart specialist", "cardiologist near me", "best cardiologist", "emergency heart doctor", "pacemaker lagwana hai", "heart valve problem", "open heart surgery", "cardiac hospital", "dil ki bimari", "dil ka ilaj", "dil ki jaanch", "heart test", "seene ka doctor", "dil ki nas ki jaanch", "dil ki surgery", "dil me dard", "seene me dard", "dil ka daura", "angioplasty operation", "pacemaker lagna", "seene mein dard", "bp control", "dil tez dhadak raha hai", "seene mein dabaav lag raha hai", "dil zor se dhadak raha hai", "dil dhadak raha hai",
+            "dil ka test", "ecg", "2d echo", "tmt test", "troponin test", "treadmill test", "echocardiography", "ecg test", "ecg karwana hai", "दिल का टेस्ट", "ईसीजी", "2d इको", "tmt टेस्ट", "ट्रोपोनिन टेस्ट"
+          ]
+        };
+
+        let matchedCategory = null;
+        let maxMatches = 0;
+
+        Object.keys(keywordMap).forEach(category => {
+          let matches = 0;
+          keywordMap[category].forEach(keyword => {
+            if (normalized.includes(keyword)) {
+              matches++;
+            }
+          });
+          if (matches > maxMatches) {
+            maxMatches = matches;
+            matchedCategory = category;
+          }
+        });
+
+        if (matchedCategory && maxMatches > 0) {
+          const matchedDocs = DOCTORS.filter(d => d.specialty === matchedCategory);
+          if (matchedDocs.length > 0) {
+            const specLabel = SPECIALTIES[matchedCategory] || "Specialist";
+            return {
+              reply: isHinglish
+                ? `Aapke symptoms ke hisab se, main aapko ${specLabel} ke specialist se consult karne ki salah doonga. Hamari list ke sahi doctors ye hain:`
+                : `Based on your symptoms, I suggest consulting a specialist in ${specLabel}. Here are suitable doctors from our list:`,
+              recommended_doctor_ids: matchedDocs.map(d => d.id)
+            };
+          }
+        }
+
+        return {
+          reply: isHinglish
+            ? "Mujhe aapke message mein koi specific symptoms nahi mile. Kripya apne symptoms batayein (jaise khansi, bukhar, ghutne me dard, aankh ki samasya) ya medical report upload karein taaki main sahi doctor ka sujhav de sakoon."
+            : "I couldn't identify any specific medical symptoms in your message. Please describe your symptoms (e.g., cough, fever, joint pain, eye issue) or upload a medical report so I can suggest the right doctor.",
+          recommended_doctor_ids: []
+        };
       };
-    };
 
-      const result = await callOpenAI(messages, offlineFallback);
+      const result = await callGemini(messages, offlineFallback);
 
       // Remove typing loader first to keep sequence clean
       State.chatHistory = State.chatHistory.filter(msg => msg.text !== typingMsg);
@@ -1970,25 +2064,9 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
     DOM.chatbotFileInput.click();
   });
 
-  // Settings view toggle and key management
-  function openSettingsView() {
-    if (DOM.chatbotSettingsView) {
-      DOM.chatbotSettingsView.classList.add("active");
-      if (DOM.settingsApiKeyInput) {
-        DOM.settingsApiKeyInput.value = openaiApiKey;
-      }
-    }
-  }
-
-  function closeSettingsView() {
-    if (DOM.chatbotSettingsView) {
-      DOM.chatbotSettingsView.classList.remove("active");
-    }
-  }
-
-  function updateChatbotHeaderMode() {
+  function updateChatbotHeaderMode(isOnline) {
     if (!DOM.chatbotHeaderMode) return;
-    if (openaiApiKey) {
+    if (isOnline) {
       DOM.chatbotHeaderMode.innerText = "Online AI Mode";
       if (DOM.chatbotStatusDot) {
         DOM.chatbotStatusDot.style.background = "#10b981";
@@ -2003,51 +2081,8 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
     }
   }
 
-  if (DOM.chatbotSettingsBtn) {
-    DOM.chatbotSettingsBtn.addEventListener("click", openSettingsView);
-  }
-  if (DOM.settingsCloseBtn) {
-    DOM.settingsCloseBtn.addEventListener("click", closeSettingsView);
-  }
-  if (DOM.settingsBtnSave) {
-    DOM.settingsBtnSave.addEventListener("click", () => {
-      const keyVal = DOM.settingsApiKeyInput.value.trim();
-      if (!keyVal) {
-        showToast("Key Config", "Please enter a valid API key or reset to offline mode.", "warning");
-        return;
-      }
-      openaiApiKey = keyVal;
-      localStorage.setItem("openai_api_key", keyVal);
-      updateChatbotHeaderMode();
-      closeSettingsView();
-      showToast("Config Saved", "OpenAI API key configured successfully.", "success");
-      
-      // Update welcome message dynamically if history is empty
-      if (State.chatHistory.length <= 1) {
-        State.chatHistory = [];
-        renderChatHistory();
-      }
-    });
-  }
-  if (DOM.settingsBtnClear) {
-    DOM.settingsBtnClear.addEventListener("click", () => {
-      openaiApiKey = "";
-      localStorage.removeItem("openai_api_key");
-      if (DOM.settingsApiKeyInput) DOM.settingsApiKeyInput.value = "";
-      updateChatbotHeaderMode();
-      closeSettingsView();
-      showToast("Offline Mode", "Reverted to local Offline Fallback Mode.", "success");
-      
-      // Update welcome message dynamically if history is empty
-      if (State.chatHistory.length <= 1) {
-        State.chatHistory = [];
-        renderChatHistory();
-      }
-    });
-  }
-
-  // Initialize status on startup
-  updateChatbotHeaderMode();
+  // Initialize status as Online AI Mode on startup
+  updateChatbotHeaderMode(true);
 
   async function analyzeReportAndRespond(fileName) {
     const normalized = fileName.toLowerCase();
@@ -2136,7 +2171,7 @@ Make sure recommended_doctor_ids contains ONLY the exact string IDs of matched d
     };
 
     try {
-      const result = await callOpenAI(messages, offlineFallback);
+      const result = await callGemini(messages, offlineFallback);
       appendMessage("bot", result.reply, null, result.recommended_doctor_ids || []);
     } catch (err) {
       console.error("Error in analyzeReportAndRespond:", err);

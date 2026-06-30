@@ -257,45 +257,13 @@
         <div class="chatbot-status-dot" id="chatbot-status-dot"></div>
         <div>
           <h4 class="chatbot-header-title">MagnumKare AI</h4>
-          <span class="chatbot-header-subtitle" id="chatbot-header-mode">Offline Fallback Mode</span>
+          <span class="chatbot-header-subtitle" id="chatbot-header-mode">Online AI Mode</span>
         </div>
       </div>
       
-      <div style="display: flex; align-items: center; gap: 8px;">
-        <button class="chatbot-settings-btn" id="chatbot-settings-btn" title="AI Key Configuration" aria-label="Open AI configuration">
-          <i data-lucide="settings" style="width: 18px; height: 18px; stroke: currentColor;"></i>
-        </button>
-        <button class="chatbot-close-btn" id="chatbot-close-btn" aria-label="Close chat">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- Chatbot Settings Overlay View -->
-    <div class="chatbot-settings-view" id="chatbot-settings-view">
-      <div class="settings-view-header">
-        <h4 class="settings-view-title">AI Settings</h4>
-        <button class="settings-view-close-btn" id="settings-view-close-btn" aria-label="Back to chat">
-          <i data-lucide="arrow-left" style="width: 18px; height: 18px; stroke: currentColor;"></i>
-        </button>
-      </div>
-      <div class="settings-view-body">
-        <p class="settings-view-desc">By default, the chatbot runs in <strong>Offline Fallback Mode</strong> using local matching to prevent API quota/connection errors.</p>
-        
-        <div class="settings-view-field">
-          <label class="settings-view-label" for="settings-api-key-input">OpenAI API Key</label>
-          <input type="password" id="settings-api-key-input" placeholder="sk-proj-..." class="settings-view-input">
-        </div>
-        
-        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-          <button type="button" class="settings-view-btn-save" id="settings-view-btn-save">
-            <i data-lucide="save" style="width: 14px; height: 14px; margin-right: 4px;"></i> Save API Key
-          </button>
-          <button type="button" class="settings-view-btn-clear" id="settings-view-btn-clear">
-            <i data-lucide="trash-2" style="width: 14px; height: 14px; margin-right: 4px;"></i> Reset to Offline Mode
-          </button>
-        </div>
-      </div>
+      <button class="chatbot-close-btn" id="chatbot-close-btn" aria-label="Close chat">
+        <i data-lucide="x"></i>
+      </button>
     </div>
     
     <div class="chatbot-messages" id="chatbot-messages-container">
