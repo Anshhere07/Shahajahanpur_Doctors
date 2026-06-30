@@ -1770,6 +1770,14 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          console.warn("Gemini API Key is invalid or has been revoked. Clearing key and switching to permanent Offline Fallback Mode.");
+          geminiApiKey = null;
+          localStorage.removeItem("gemini_api_key");
+          isChatbotOnlineMode = false;
+          updateChatbotHeaderMode(false);
+          return fallbackFn();
+        }
         throw new Error("Gemini API returned error status: " + response.status);
       }
 
@@ -1780,7 +1788,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateChatbotHeaderMode(true);
       return result;
     } catch (err) {
-      console.error("Gemini API call failed, using offline fallback:", err);
+      console.warn("Gemini API call failed, using offline fallback:", err.message || err);
       onlineModeCooldownUntil = Date.now() + 60 * 1000;
       isChatbotOnlineMode = false;
       updateChatbotHeaderMode(false);
